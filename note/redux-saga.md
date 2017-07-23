@@ -190,3 +190,70 @@ takeEvery，同一时间允许多个 task 执行。takeLatest，同一时间只�
     }
 
 上面这个例子有限制，LOGIN 必须发生在 LOGOUT 之前，所以才叫 Flow 啊。
+
+#### Non-blocking calls
+
+这一章讲的是用 fork 替代 call，实现 yield 的非阻塞操作 (?? 越来越绕了...)
+
+就以上面那个例子为例，我们说道，它有限制，LOGIN 必须发生在 LOGOUT 之前，如果 LOGOUT 发生在 LOGIN 之前，那么这个事件就丢失了。因为第一个 take 阻塞住了第二个 take。如果没有等到 LOGIN，就永远停在第一个 yield 那里。
+
+复杂一点的例子：
+
+    function* authorize(user, password) {
+      try {
+        const token = yield call(Api.authorize, user, password)
+        yield put({type: 'LOGIN_SUCCESS', token})
+        return token
+      } catch(error) {
+        yield put({type: 'LOGIN_ERROR', error})
+      }
+    }
+
+    function* loginFlow() {
+      while (true) {
+        const {user, password} = yield take('LOGIN_REQUEST')
+        const token = yield call(authorize, user, password)  // !!! 如果在 authorize 期间发出了 LOGOUT action，后面的 yield 将不会执行
+        if (token) {
+          yield call(Api.storeItem, {token})
+          yield take('LOGOUT')
+          yield call(Api.clearItem, 'token')
+        }
+      }
+    }
+
+正如上面的注释所言，如果在 authorize 还没有返回之前，app 发出了 LOGOUT action，后面的 yield 因为被前面的 yield 阻塞住了，所以执行不到，导致逻辑就完全乱了。
+
+因为 call 是阻塞的，解决办法是换成 fork，fork 是非阻塞的，但换成 fork 后，等号左边就不再是 token 了，是什么呢，后面会说，是一个 task。
+
+(Shit! 我现在觉得写 generator 函数完全颠覆了传统思维，首先，执行逻辑变了，return 意义变了，更重要的是，= 两边不是赋值的关系了，等号左边的值不是由右边决定的，而是由 `next(x)` 传进来的值决定的，现在突然觉得这有点让人难以接受。看到一个带 yield 的表达式，你都没法确切地知道等号左边到底该得到个啥值了，甚至是什么类型的值，因为你不知道 `next(x)` 里的 x 是啥玩意。)
+
+然后换成了 fork 后又带了一堆屁事，各种补救，最后差不多是这个样子：
+
+    function* authorize(user, password) {
+      try {
+        const token = yield call(Api.authorize, user, password)
+        yield put({type: 'LOGIN_SUCCESS', token})
+        yield call(Api.storeItem, {token})
+        return token
+      } catch(error) {
+        yield put({type: 'LOGIN_ERROR', error})
+      } finally {
+        if (yield cancelled()) {
+          // ... put special cancellation handling code here
+        }
+      }
+    }
+
+    function* loginFlow() {
+      while (true) {
+        const {user, password} = yield take('LOGIN_REQUEST')
+        // fork return a Task object
+        const task = yield fork(authorize, user, password)
+        const action = yield take(['LOGOUT', 'LOGIN_ERROR'])
+        if (action.type === 'LOGOUT')
+          yield cancel(task)
+        yield call(Api.clearItem, 'token')
+      }
+    }
+
+反正我是不会这么写的。
