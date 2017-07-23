@@ -75,3 +75,38 @@ watchIncrementAsync 这个函数的作用是为 `INCREMENT_ASYNC` 这种 type �
 在 incrementAsync 函数中，用 `yield delay(1000)` 先停止 1 秒钟，然后再发现一个 type 为 `INCREMENT` 的同步 action。
 
 疑问：如果发现的异步 action 中含有 data 部分，该怎么传给 handler?
+
+##### Making our code testable
+
+为了方便测试，引出了 call 的用法。
+
+    export function* incrementAsync() {
+      console.log('incrementAsync')
+      // yield delay(1000)
+      yield call(delay, 1000)         // => { CALL: {fn: delay, args: [1000]} }
+      yield put({type: 'INCREMENT'})  // => { PUT: {type: 'INCREMENT'} }
+    }
+
+用 `yield call(delay, 1000)` 替代 `yield delay(1000)` 的作用是什么呢。前者，`call(delay, 1000)` 生成的是一个 Plain Object，原始数据对象，只有数据，没有方法。它的值如上面的注释所示：
+
+    { CALL: {fn: delay, args: [1000]} }
+
+put 生成的也是 Plain Object，值为：
+
+    { PUT: { type: 'INCREMENT' } }
+
+当 saga 中间件接收到这样的值后，检测如果有 CALL 字段，那么就执行相应的方法，如果有 PUT 字段，则 dispatch 相应的 action。
+
+这样，call / put 变成了同步操作，得到了立即返回的 plain object，这种的操作最好测试了，不是吗？
+
+    test('incrementAsync Saga test', assert => {
+      const gen = incrementAsync()
+
+      assert.deepEqual(
+        gen.next().value,
+        call(delay, 1000),
+        'incrementAsync Saga must call delay(1000)'
+      )
+      ...
+
+(哎，妈呀，我怎么感觉是为了测试，就把简单问题复杂化了呢，徒增无用的中间环节)。
