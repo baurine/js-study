@@ -257,3 +257,244 @@ takeEvery，同一时间允许多个 task 执行。takeLatest，同一时间只�
     }
 
 反正我是不会这么写的。
+
+#### Running Tasks In Parallel
+
+    // wrong, effects will be executed in sequence
+    const users  = yield call(fetch, '/users'),
+          repos = yield call(fetch, '/repos')
+
+    // correct, effects will get executed in parallel
+    const [users, repos]  = yield all([
+      call(fetch, '/users'),
+      call(fetch, '/repos')
+    ])
+
+类似 Promise.all()
+
+#### Starting a race between multiple Effects
+
+类似 Promise.race()，这里也是用 race。而且这里的 race，失败的 task 会自动取消。
+
+简单的例子：
+
+    function* fetchPostsWithTimeout() {
+      const {posts, timeout} = yield race({
+        posts: call(fetchApi, '/posts'),
+        timeout: call(delay, 1000)
+      })
+
+      if (posts)
+        put({type: 'POSTS_RECEIVED', posts})
+      else
+        put({type: 'TIMEOUT_ERROR'})
+    }
+
+一个使用场景，用一个按钮取消一个后台一直执行的任务：
+
+    function* backgroundTask() {
+      while (true) { ... }
+    }
+
+    function* watchStartBackgroundTask() {
+      while (true) {
+        yield take('START_BACKGROUND_TASK')
+        yield race({
+          task: call(backgroundTask),
+          cancel: take('CANCEL_TASK')
+        })
+      }
+    }
+
+当接收到 `START_BACKGROUND_TASK` action 后，backgroundTask 和 `take(CANCEL_TASK)` 同时执行，如果 `CANCEL_TASK` action 发出，cancel 任务执行，并自动取消 backgroundTask 的执行。好玩，有意思。
+
+#### Sequencing Sagas via `yield*`
+
+    function* playLevelOne() { ... }
+    function* playLevelTwo() { ... }
+    function* playLevelThree() { ... }
+
+    function* game() {
+      const score1 = yield* playLevelOne()
+      yield put(showScore(score1))
+
+      const score2 = yield* playLevelTwo()
+      yield put(showScore(score2))
+
+      const score3 = yield* playLevelThree()
+      yield put(showScore(score3))
+    }
+
+> Note that using yield* will cause the JavaScript runtime to spread the whole sequence. The resulting iterator (from game()) will yield all values from the nested iterators. A more powerful alternative is to use the more generic middleware composition mechanism.
+
+这段话的意思是，`yield*` 不是代理，是展开?? shit，就跟 es6 的 `...rest` 的用法一样??
+
+#### Composing Sagas
+
+好像大致意思是说，用 `yield*` 有一些缺点有限制，还是用 `yield` 好。
+
+#### Task cancellation
+
+没什么新内容，只是说，取消了一个 task 后，会向下传递，task 里 yield 的 subtask 也会被连着取消，这个很好理解，觉得是理所当然的事。
+
+#### redux-saga's fork model
+
+- fork is used to create attached forks
+- spawn is used to create detached forks
+
+但这小节没怎么说 spawn。顾名思议，attach forks，意味着 task 和 parent 还有关联，而 detached forks 意味着 task 和 parent 没有关联了，放飞自我了。
+
+    function* fetchAll() {
+      const task1 = yield fork(fetchResource, 'users')
+      const task2 = yield fork(fetchResource, 'comments')
+      yield call(delay, 1000)
+    }
+
+    function* fetchResource(resource) {
+      const {data} = yield call(api.fetch, resource)
+      yield put(receiveData(data))
+    }
+
+    function* main() {
+      yield call(fetchAll)
+    }
+
+这个例子用来说明，在 1 秒之后，即 `yield call(delay, 1000)` 执行完后，如果 taks1 和 task2 还没执行完，main() 函数是不会结束的。只有等 task1，task2，delay 都执行完了，main() 才会结束。因此，上面的 fetchAll 相当于：
+
+    yield all([
+      call(fetchResource, 'users'),
+      call(fetchResource, 'comments'),
+      call(delay, 1000)
+    ])
+
+#### Concurrency
+
+这一小节描述了 takeEvery 和 takeLatest 的底层实现，果然是用 fork 实现的，难怪前面的内容一直说 takeEvery 会 fork 出一个 task 来执行。
+
+    const takeEvery = (pattern, saga, ...args) => fork(function*() {
+      while (true) {
+        const action = yield take(pattern)
+        yield fork(saga, ...args.concat(action))
+      }
+    })
+
+    const takeLatest = (pattern, saga, ...args) => fork(function*() {
+      let lastTask
+      while (true) {
+        const action = yield take(pattern)
+        if (lastTask) {
+          yield cancel(lastTask) // cancel is no-op if the task has already terminated
+        }
+        lastTask = yield fork(saga, ...args.concat(action))
+      }
+    })
+
+这里的 fork 的底层又是怎么实现的呢，好奇?
+
+#### Testing Sagas
+
+略，前面已讲过。
+
+#### Connecting Sagas to external Input/Output
+
+略，暂时不需要。
+
+#### Using Channels
+
+这一小节的内容有点高级，但也大致明白了它们的作用。有三种 channel，分别是 actionChannel，eventChannel，channel。
+
+actionChannel，用于缓存接收的消息，相当于一个消息队列。然后后面的 task 不断地从这个列队中取消息进行处理。
+
+    function* watchRequests() {
+      while (true) {
+        const {payload} = yield take('REQUEST')
+        yield fork(handleRequest, payload)
+      }
+    }
+
+    function* handleRequest(payload) { ... }
+
+上面这是经典的 watch-and-fork 模式，如果多个 REQUEST 发出，那么会有多个 handleRequest 同时运行。
+
+而 actionChannel 可以让这些消息的处理串行化。
+
+    function* watchRequests() {
+      // 1- Create a channel for request actions
+      const requestChan = yield actionChannel('REQUEST') // 所有发出的 REQUEST 消息都会先缓存到 requestChan 中
+      while (true) {
+        // 2- take from the channel
+        const {payload} = yield take(requestChan)
+        // 3- Note that we're using a blocking call
+        yield call(handleRequest, payload)
+      }
+    }
+
+而 eventChannel 呢，一般来说，take 只从 redux store 中取消息，而 eventChannel 则是生成了一个 event source，它不断地向外发消息，而 take 也可以从这个 eventChannel 中获取消息。
+
+    import { eventChannel, END } from 'redux-saga'
+
+    // creates an event Channel from an interval of seconds
+    function countdown(secs) {
+      return eventChannel(emitter => {
+          const iv = setInterval(() => {
+            secs -= 1
+            if (secs > 0) {
+              emitter(secs)
+            } else {
+              // this causes the channel to close
+              emitter(END)
+            }
+          }, 1000);
+          // The subscriber must return an unsubscribe function
+          return () => {
+            clearInterval(iv)
+          } // !!! 这个部分很有意思，反注册的实现，和 redux 中的某个实现是一样的
+        }
+      )
+    }
+
+    export function* saga() {
+      const chan = yield call(countdown, value)
+      try {    
+        while (true) {
+          // take(END) will cause the saga to terminate by jumping to the finally block
+          let seconds = yield take(chan)  // !!! 此时，take 从 eventChannel 中取消息，而不再是 redux store
+          console.log(`countdown: ${seconds}`)
+        }
+      } finally {
+        console.log('countdown terminated')
+      }
+    }
+
+最后一种就叫 channel，描述说是用来在 sagas 间通信的，从例子来看，是这么个原理，一个 saga 从 redux store 中取到某个消息，然后放入这个 channel 中，然后有多个其它 saga 从这个 channel 取消息去处理，有点生产者-消费者模型，但这里有多个消费者。
+
+    import { channel } from 'redux-saga'
+    import { take, fork, ... } from 'redux-saga/effects'
+
+    function* watchRequests() {
+      // create a channel to queue incoming requests
+      const chan = yield call(channel)
+
+      // create 3 worker 'threads'
+      for (var i = 0; i < 3; i++) {
+        yield fork(handleRequest, chan)
+      }
+
+      while (true) {
+        const {payload} = yield take('REQUEST')
+        yield put(chan, payload)  // !!! 放入 channel，让 worker 去处理
+      }
+    }
+
+    function* handleRequest(chan) {
+      while (true) {
+        const payload = yield take(chan) // !!! worker 从 channel 中取消息，处理
+        // process the request
+      }
+    }
+
+### Recipes
+
+Throttle / Debounce / Retry / Undo
+
+DONE!
