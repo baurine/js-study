@@ -1,5 +1,5 @@
 import { delay } from 'redux-saga'
-import { put, takeEvery, all, call } from 'redux-saga/effects'
+import { put, takeEvery, all, call, take, select } from 'redux-saga/effects'
 
 export function* helloSaga() {
   console.log('Hello Sagas!')
@@ -22,9 +22,20 @@ export function* watchIncrementAsync() {
   yield takeEvery('INCREMENT_ASYNC', incrementAsync)
 }
 
+export function* watchAndLog() {
+  while(true) {
+    const action = yield take('*')
+    const state = yield select()
+
+    console.log('action', action)
+    console.log('state after', state)
+  }
+}
+
 export default function* rootSaga() {
   yield all([
     helloSaga(),
-    watchIncrementAsync()
+    watchIncrementAsync(),
+    watchAndLog()
   ])
 }
