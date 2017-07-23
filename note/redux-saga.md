@@ -110,3 +110,83 @@ put 生成的也是 Plain Object，值为：
       ...
 
 (哎，妈呀，我怎么感觉是为了测试，就把简单问题复杂化了呢，徒增无用的中间环节)。
+
+### Basic Conecpts
+
+#### Using Saga Helpers
+
+takeEvery, takeLatest 的用法。
+
+takeEvery，同一时间允许多个 task 执行。takeLatest，同一时间只允许最新的一个执行，如果之前的还在执行中，将会被 cancel 掉。
+
+#### Declarative Effects
+
+这一小节的内容和上面讲测试的内容基本意思一样。所谓的 Effects 就是用 put / call 生成的 Plain Object。
+
+    const products = yield call(Api.fetch, '/products')
+
+    // Effect -> call the function Api.fetch with `./products` as argument
+    {
+      CALL: {
+        fn: Api.fetch,
+        args: ['./products']
+      }
+    }
+
+所有用来生成 Effetcs 的方法都放在 `redux-saga/effects` 包里。
+
+#### Dispatching actions to the store
+
+在 generator 方法中用 `yield put({ type: xxx })` 替代直接调用 `dispatch({ type: xxx })`，好像还是为了方便测试。
+
+#### Error handling
+
+`try...catch`
+
+### Advanced
+
+#### Pulling future actions
+
+这一小节的内容有点酷。用 `take` 来控制流程。
+
+    import { select, take } from 'redux-saga/effects'
+
+    function* watchAndLog() {
+      while (true) {
+        const action = yield take('*')
+        const state = yield select()
+
+        console.log('action', action)
+        console.log('state after', state)
+      }
+    }
+
+注意，在 generator 函数中，`while(true)` 并不是导致死循环，因为 generator 函数不是 run-to-completion 的行为，而是 run-stop-restart 的行为。
+
+注意标题中的 `Pull` 是怎么来的：
+
+> In the case of `take` the control is inverted. Instead of the actions being *pushed* to the handler tasks, the Saga is *pulling* the action by itself. It looks as if the Saga is performing a normal function call `action = getNextAction()` which will resolve when the action is dispatched.
+
+> This inversion of control allows us to implement control flows that are non-trivial to do with the traditional push approach.
+
+一个例子，用 take 可以做其它不能做的事情：
+
+    function* watchFirstThreeTodosCreation() {
+      for (let i = 0; i < 3; i++) {
+        const action = yield take('TODO_CREATED')
+      }
+      yield put({type: 'SHOW_CONGRATULATION'})
+    }
+
+把 `LOGIN` 和 `LOGOUT` 的逻辑写在一起，不用分开写：
+
+    function* loginFlow() {
+      while (true) {
+        yield take('LOGIN')
+        // ... perform the login logic
+        yield take('LOGOUT')
+        // ... perform the logout logic
+      }
+    }
+
+上面这个例子有限制，LOGIN 必须发生在 LOGOUT 之前，所以才叫 Flow 啊。
