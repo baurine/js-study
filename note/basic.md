@@ -1,0 +1,390 @@
+# Basic
+
+记录一些 JavaScript 的基础知识。
+
+## Note 1
+
+### 闭包
+
+2017/7/30
+
+资料：
+
+1. [Javascript 王国之函数教主 - 刘欣](https://mp.weixin.qq.com/s?__biz=MzAxOTc0NzExNg==&mid=2665513789&idx=1&sn=e2e39002a915291fa06050c8116c2f96)
+1. [图解 Javascript 上下文与作用域](http://blog.rainy.im/2015/07/04/scope-chain-and-prototype-chain-in-js/)
+
+示例代码：
+
+    // 用函数作为返回值
+    function createEatFunction() {
+      var desc = " is eating"
+      function eat(animal) {
+        console.log(animal.name + desc)
+      }
+      return eat
+    }
+
+    var eat = createEatFunction() // 生成函数 (其实是生成闭包)
+
+    var desc = "正在吃东西"
+
+    eat(dog) // 输出 "... is eating"，而不是 "... 正在吃东西"，也不是 desc undefined
+
+简而言之，闭包就是带有上下文的函数，因此，它不是一个纯粹的函数。如果用面向对象的思维来理解，比如想象 Java 会怎么做，它应该是返回一个对象，这个对象里包含 desc 这个成员变量和 eat() 函数。C++ 中有一种对象叫函数对象，我觉得是类似闭包的作用。
+
+然后关键是这个闭包中的上下文中什么呢？
+
+上面这段代码，如果你用 c/c++/java 的思维去理解的话，会感觉程序得不到正确结果。因为在 createEatFunction() 执行完之后，函数内的 desc 作为栈上的值，会被从栈中弹出，它的值不再可用。
+
+比如下面这段代码就是常在 c/c++ 犯的错误，在函数中返回了栈上的对象的指针。
+
+    #include <stdio.h>
+    #include <string.h>
+
+    char* get_str() {
+      char s[5] = "str1";
+      return s;
+    }
+
+    int main() {
+      char* s1 = get_str(); // get_str() 执行完后，s[5] = "str1" 的值被清栈，因此此处 s1 的值是随机值
+      printf("%s", s1);
+      printf("%d", strlen(s1));
+
+      char s2[5] = "str2";
+      printf("%s", s2);
+      printf("%d", strlen(s2));
+    }
+
+但是 js 中，如果在函数中作为返回值的函数，它引用了自身以外的变量，那么这个变量会被保存下来，相当于保存了现场。实际上因为 js 的函数有自己的作用域，这里相当于是把外层函数的作用域保存了下来。
+
+简化的示例图：
+
+![](../art/js-closure.jpeg)
+
+JavaScript 中函数是一等公民，既可以直接作为参数传参，也可以作为作为返回值，使用起来非常灵活。我很久以后才意识到，这种灵活性和能力是很多传统语言不具备的。
+
+比如 c/c++，指针是一等公民 (可以这么说吧)，虽然也可以将函数指针为作参数传参，但由于不能在函数中声明新的函数 (印象中是不行，不知道新的标准可不可以了)，所以将函数指针作为返回值也没有什么意义。而 Java，我很久以后才意识到，它连用函数作为参数都不行，连回调函数都要包装在对象中 (一般是接口对象)，一切都要包装在对象中，难怪人们说它啰嗦。
+
+我觉得 JS 的闭包，更重要的作用是生成不同的作用域。因为同一个函数生成的闭包，这些闭包中的函数应该是共享一份的，因为是代码嘛，只有作用域中的变量是不一样的，所以相同类型闭包之间，不同的是作用域中的值，相同的是执行代码，即返回的函数。
+
+还以上面的示例代码作为例子，给它加一个参数：
+
+    function createEatFunction(food) {
+      var desc = " is eating "
+      function eat(animal) {
+        console.log(animal.name + desc + food)
+      }
+      return eat
+    }
+
+    var eat1 = createEatFunction("bone")
+    var eat2 = createEatFunction("fish")
+
+上面 eat1 和 eat2 是相同类型的闭包，它们的执行代码是一样的，即 eat() 函数，但上下文，即保存的作用域是不一样的，一个 food 引用的 "bone"，另一个是 "fish"。
+
+### 立即执行函数 (IIFE)
+
+2017/7/30
+
+为什么需要立即执行函数。
+
+资料：
+
+1. [深入理解 JavaScript 系列（4）：立即调用的函数表达式](http://www.cnblogs.com/TomXu/archive/2011/12/31/2289423.html)
+1. [JS 作用域与块级作用域](http://blog.csdn.net/huli870715/article/details/6531664)
+
+JS 中的立即执行函数 IIFE (Immediately-Invoke Function Expression)：
+
+    var counter = (function(){
+      var i = 0;
+      return {
+          get: function(){
+              return i;
+          },
+          set: function(val){
+              i = val;
+          },
+          increment: function(){
+              return ++i;
+          }
+      }
+    }());
+
+    counter.get();       // 0
+    counter.set(3);
+    counter.increment(); // 4
+    counter.increment(); // 5
+
+我的一些理解，IIFE 相当于一个只执行了一次且只能执行这一次的匿名函数，它返回了一个全局唯一的闭包。比如上例中的 counter，你不能再得到第二个 counter，因为生成它的匿名函数不能再执行第二遍。这样，在写库的时候，就可以用这种方式来生成一个唯一的全局对象。能想象 jquery 可能是这么实现的：
+
+    var $ = (function() {
+
+      ...
+      function css(...) {
+        ...
+      }
+
+      function select(selector) {
+
+      }
+
+      return select;
+
+    }());
+
+    // 使用
+    $('#root').css(...)
+
+IIFE 的好处，本质是源于 JavaScript 早期没有模块管理，没有块作用域的缺陷导致的。它只有函数作用域和全局作用域。
+
+什么是块作用域：任何一对括号 `()` 和花括号 `{}` 中的语句集都属于一个块，在这之中定义的所有变量在代码块外都是不可见的。
+
+函数作用域：定义在函数中的参数和变量在函数外部是不可见的。
+
+以 c/c++/java 为例，它们有块作用域：
+
+    #include <stdio.h>
+    void main() {
+      int i=2;
+      i--;
+      if (i) {
+        int j=3;
+      }
+      printf("%d/n",j); // 运行得到错误，j undefined
+    }
+
+js：
+
+    function test(){
+      for(var i=0;i<3;i++){
+      }
+      console.log(i)  // 输出 3，可以访问到 i
+    }
+    test();
+
+可见 js 不支持块级作用域，它只支持函数作用域，而且在一个函数中的任何位置定义的变量在该函数中的任何地方都是可见的。
+
+解决办法，如果你想让 `()` 中的值不被外界访问，把这一部分逻辑放到 IIFE 中：
+
+    function test() {
+      (function () {
+        for(var i=0;i<4;i++){
+        }
+      })();
+      console.log(i)  // i undefined
+    }
+    test();
+
+但就这里而言，没有什么必要。
+
+如果 js 支持模块管理，其实我认为没有块级作用域也不是什么大问题。但是没有模块管理，又没用块级作用域，那就是大问题了。
+
+(?? 模块是不是一种更大的块级作用域，比 `()` 和 `{}` 还大，文件级别，如果是的话，那上面这句话就当我没说。)
+
+对于 c/c++/java 来说，它们有一个文件级别的作用域。即使有定义在函数以外的变量，对于 c/c++ 来说，如果你没有在 `.h` 中声明它，对于 java 来说，如果你没有用 public 声明它，那么它就不能被其它文件所访问到。
+
+一个 c 的例子：
+
+    // b.h
+    void bar();
+
+    // b.c
+    #include "b.h"
+    #include <stdio.h>
+
+    static int foo = 6;
+
+    void bar() {
+      printf("%d\n", foo);
+    }
+
+    // a.c
+    #include "b.h"
+    #include <stdio.h>
+
+    static int foo = 5;
+
+    int main() {
+      printf("%d\n", foo);
+      bar();
+    }
+
+    $ gcc b.c a.c
+    $ ./a.out
+    5
+    6
+
+a.c 和 b.c 中都定义 foo 变量，但并没有冲突。而且如果你在 b.c 中定义一个 `static int foo2 = 7;`，在 a.c 中是无法直拉使用的，编译就通不过，除非你在 `b.h` 中声明 foo2。
+
+但是对于 js 来说，因为没有模块管理，任何函数以外的变量都会变成全局变量 (这里指在 let/const 被引入之前，用 var 声明的变量)，而不是只在文件内生效。如果有多个 js 文件，它们有同名的全局变量，就会有冲突。这就是所谓的全局污染吧。比如 a.js 和 b.js 中都定义了 `var foo` 这个变量，那么先加载的 foo 就会被后加载的 foo 所覆盖掉。
+
+但是自从 js 引入了模块管理和 let/const 之后，这个问题就不存在了。用 let/const 声明的变量具有块级作用域及文件级别的作用域，不会造成全局污染。只有在 js 文件中被显式 export 的变量和函数，才能在其它 js 文件中被 import/require 后使用。
+
+(这个地方我还要做一些实验，有了模块管理后，函数外用 var 声明的变量，到底是全局的，还是文件模块内的? 用 node 做的实验结果是，用 var 声明的变量不再是全局变量，而是文件模块内的变量。但在 chrome 中，用 var 声明的变量，仍然是全局的，用 let/const 不是全局变量，详情见下面的 **var / let /const** 小节)。
+
+但在这之前，解决全局污染的办法就是使用 IIFE，把整个 js 文件的代码包含在一个 IIFE 函数中，用显式的 return 来 export 所需要的变量和函数。
+
+### this
+
+2017/7/30
+
+[图解 Javascript 上下文与作用域](http://blog.rainy.im/2015/07/04/scope-chain-and-prototype-chain-in-js/)
+
+this 的值，概括起来很简单，就是一句话，当前函数执行在哪个对象上，这个 this 就指向哪个对象。
+
+话是很简单，但问题的关键是，使用的时候，会很容易不知道或是混淆这个函数到底执行在哪个对象上。
+
+容易区分的例子 (以下例子皆来自上面的链接文章中)：
+
+(注意，下面的例子中定义变量用的都是 var，函数外用 var 定义的变量是全局变量，如果用 let/const 定义的变量，不是全局变量，而是文件内的块级变量，而且下面的代码只在浏览器中生效，用 node 运行得不到预期结果，因为在 node 中，因为有了模块管理，var 定义的不再是全局变量，除非显示地把它绑定到 global 上，比如 `global.x = 1`)。
+
+    var x = 1;
+    var f = function(){
+      console.log(this.x);
+    }
+    f();  // -> 1，this 指向 global
+
+    var ff = function(){
+      this.x = 2;
+      console.log(this.x);
+    }
+    ff(); // -> 2，this 指向 global，因此 this.x 改变了全局的 x
+    x     // -> 2
+
+    var o = {x: "o's x", f: f};
+    o.f(); // "o's x"，this 指向对象 o，或者说 this 被绑到了对象 o 上
+
+不容易区分的例子，尤其是和闭包一起用的时候：
+
+    var name = "global";
+    var oo = {
+      name: "oo",
+      getNameFunc: function(){
+        return function(){
+          return this.name;
+        };
+      }
+    }
+    oo.getNameFunc()();  // -> "global"，this 指向 global，并不是 oo
+
+这是因为上面这句 `oo.getNameFunc()()` 实际等价于：
+
+    getName = oo.getNameFunc();
+    getName();  // -> "global"，this 指向 global
+
+为了避免闭包中的 this 在执行时被替换，可以采取的几种方法。
+
+显式保存原来的 this 对象：
+
+    var name = "global";
+    var oooo = {
+      name: "ox4",
+      getNameFunc: function(){
+        var self = this;
+        return function(){
+          return self.name;
+        };
+      }
+    };
+    oooo.getNameFunc()(); // -> "ox4"
+
+显式 bind 对象到 this 上：
+
+    var name = "global";
+    var oo = {
+      name: "oo",
+      getNameFunc: function(){
+        return function() {
+          return this.name;
+        };
+      }
+    }
+    oo.getNameFunc()();  // -> "global"
+    oo.getNameFunc().bind(oo)(); // -> "oo"
+
+然后再说一说 ES6 的箭头函数，它改善了容易把 this 用错的情况。
+
+[箭头函数 - 廖雪峰](https://www.liaoxuefeng.com/wiki/001434446689867b27157e896e74d51a89c25cc8b43bdb3000/001438565969057627e5435793645b7acaee3b6869d1374000)
+
+简单地说：
+
+> 箭头函数看上去是匿名函数的一种简写，但实际上，箭头函数和匿名函数有个明显的区别：箭头函数内部的 this 是词法作用域，由上下文确定。
+
+这里词法作用域，指的是在哪个对象上定义了这个箭头函数，这个箭头函数中的 this 就指向谁。这相当于是说，this 是在箭头函数被定义时就已经明确了，而不像以前，this 是在执行时被动态决定的。
+
+下面的例子来自廖雪峰的文章：
+
+    var obj = {
+        birth: 1990,
+        getAge: function (year) {
+            var b = this.birth; // 1990
+            var fn = (y) => y - this.birth; // this.birth仍是1990
+            return fn.call({birth:2000}, year);
+        }
+    };
+    obj.getAge(2015); // 25
+
+由于箭头函数的 this 在被定义时就已经明确，所以像 `fn.bind()` `fn.call()` `fn.apply()` 这些可以用来动态改变 this 绑定的方法中的 this 参数就不再有意义了。
+
+[关于箭头函数 this 的理解几乎完全是错误的](https://github.com/ruanyf/es6tutorial/issues/150)
+
+> > 所有的箭头函数都没有自己的 this，都指向外层。
+
+> 这句话就是箭头函数的精髓。
+
+> > "箭头函数" 的 this，总是指向定义时所在的对象，而不是运行时所在的对象。
+
+> 这一句说的太模糊了，最好改成，总是指向所在函数 (即箭头函数的外层) 运行时的 this。
+
+[箭头函数 - MDN](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Functions/Arrow_functions)
+
+> 箭头函数会捕获其所在上下文的  this 值，作为自己的 this 值，因此下面的代码将如期运行。
+
+    function Person() {
+        this.age = 0;
+        setInterval(() => {
+            // 回调里面的 `this` 变量就指向了期望的那个对象了
+            this.age++;
+        }, 3000);
+    }
+
+    var p = new Person();
+
+### var / let / const
+
+前面说道，因为 var 定义的变量没有块级作用域，所以导致了各种问题和各种 hacky 的做法。于是，从 ES6 开始，引用了 let/const 来解决这个问题。简单地说，let/const 定义的变量具有块级作用域，let 定义的是变量，const 定义常量。
+
+    function test(){
+      for(var i=0;i<3;i++){
+      }
+      console.log(i)  // 输出 3，可以访问到 i
+    }
+    test();
+
+    function test(){
+      for(let i=0;i<3;i++){
+      }
+      console.log(i)  // i undefined，不再需要用 IIFE 来解决这个问题了
+    }
+    test();
+
+在函数外用 let/const 定义的变量，不再绑定到全局对象上，因此不会造成全局污染。
+
+在 chrome 中运行下面两段代码，进一步了解 var / let 的区别：
+
+    var x = 1;  // x 绑定 global 上
+    var f = function(){
+      console.log(this.x);
+    }
+    f();  // -> 1，this 指向 global
+
+    let x = 1;  // x 不再是全局变量
+    var f = function(){
+      console.log(this.x);
+    }
+    f();  // -> undefined，this 指向 global，但 x 并不在 global 上
+
+但是如果用 node 来跑上面两段代码，得到的结果是一样的。因为对于 node 来说，函数外用 var 定义的也不再是全局变量，但函数内 var 还是没有块级作用域。
+
+所以没有特殊的话，用 let/const 完全替代 var 吧。
