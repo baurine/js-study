@@ -48,13 +48,13 @@
 
 1. `prototype` 也是对象，因此它也有自己的 `__proto__` 属性。根据上面所言，`__proto__` 指向对象自身构造函数的 `prototype` 属性，而这里的 `Foo.prototype` 的构造函数是谁呢？因为 `Foo.protype` 是一个普通对象，Object，它是通过 `new Object()` 创造出来的，所以它的构造函数是 Object，所以它指向 `Object.protype`。
 
-        Foo.prototype.__proto__ = Object.prototype
+        Foo.prototype.__proto__ === Object.prototype  // true
 
    又因为 `foo.__proto__ = Foo.prototype`，所以，可得
 
-        foo.__proto__.__proto__ = Object.prototpye
+        foo.__proto__.__proto__ === Object.prototpye  // true
 
-   `Object.prototype`也是对象，那么它的 `__proto__` 又是多少呢，规定 `Object.prototype.__proto__ = null`，因此
+   `Object.prototype`也是对象，那么它的 `__proto__` 又是多少呢，规定 `Object.prototype.__proto__ = null` (呃，有点特殊)，因此
 
         foo.__proto__.__proto__.__proto__ = null
 
@@ -119,7 +119,18 @@
 
         Foo.prototype.constructor === Foo  // true
 
-1. 最后我们来看一下这个 Function 是个啥玩意。Foo / Object / String，它们是构造函数，用来构造对象。但是呢，从另一个角度来看呢，其实它们也是一种对象，它们是通过 `new Function() { execution code }` 生成的对象。(所以说，Function 才是终极大 Boss。) 因为它们也是对象，所以它们也有 `__proto__` 属性，因为它们的构造函数是 Function，所以它们的 `__proto__` 指向 `Function.prototype`。
+1. 最后我们来看一下这个 Function 是个啥玩意。Foo / Object / String，它们是构造函数，用来构造对象。但是呢，从另一个角度来看呢，其实它们也是一种对象，它们是通过 `new Function() { execution code }` 生成的对象。(所以说，Function 才是终极大 Boss，是火种。)
+
+        function Foo() {
+            ...
+        }
+
+        // 等效于
+        var Foo = new Function() {
+            // execution code
+        }
+
+   因为它们也是对象，所以它们也有 `__proto__` 属性，因为它们的构造函数是 Function，所以它们的 `__proto__` 指向 `Function.prototype`。
 
         Foo.__proto__ === Function.prototype  // true
         Object.__proto__ === Function.prototype  // true
@@ -162,5 +173,18 @@ Foo 在这里是一个类，它用来生成实例对象，但同时，它也是�
         # execution code
         ...
     )
+
+再和 JavaScript 对比一下：
+
+    function Foo() {
+        ...
+    }
+
+    // 等效于
+    var Foo = new Function() {
+        // execution code
+    }
+
+是不是相似极了？惊不惊喜，意不意外。
 
 但愿我的理解没错。
