@@ -5,11 +5,9 @@
 1. [Javascript 王国的一次旅行，一个没有类的世界怎么玩转面向对象？](https://mp.weixin.qq.com/s?__biz=MzAxOTc0NzExNg==&mid=2665513786&idx=1&sn=6f51ad314e3ef3e1575e032568477f3a)
 1. [图解 Javascript 原型链](http://blog.rainy.im/2015/07/20/prototype-chain-in-js/)
 
-   ![prototype](../art/js-prototype.png)
+![prototype](../art/js-prototype.png)
 
 上面这是 [ByVoid](https://github.com/byvoid) 画的一张图，理解了它，就理解了 js 的原型链。
-
-// TODO: 有空 (主要是要画好多图) 把这张图的形成过程写一下。
 
 假设 Foo / Bar 是构造函数：
 
@@ -188,3 +186,5 @@ Foo 在这里是一个类，它用来生成实例对象，但同时，它也是�
 是不是相似极了？惊不惊喜，意不意外。
 
 但愿我的理解没错。
+
+另外，我觉得 JavaScript 的原型链不好理解的原因之一，一般的语言，是先定义类，再定义类的构造函数，构造函数是属于类的，比如 Ruby 中类中的 initialize() 方法是构造函数，而 JavaScript 是反过来的，先有构造函数，然后把类似类的定义放到了构造函数的 prototype 属性中。
