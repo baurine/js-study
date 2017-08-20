@@ -351,6 +351,39 @@ this 的值，概括起来很简单，就是一句话，当前函数执行在哪
 
     var p = new Person();
 
+2017/8/18，在公司做了关于 javascript 的分享，对 javascript 中普通函数和箭头函数的 this 又有了更清晰的理解。其中的关键点在于，this 只在函数中有意义，因为它在函数中，是指向函数运行时所在的对象。在普通的 Object 中没有意义，或者说和这个 Object 没有关系，在普通的 Object 中 this 指向 global。
+
+理解了这一点，我们就能很容易理解下面这个例子了 (我以前是非常不能理解的)。
+
+    this.cnt = 100
+    const counter = {
+      cnt: 50,
+      foo: this.cnt,
+      inc: () => console.log(this.cnt) // what's the this point to?
+    }
+
+    console.log(counter.foo)  // 100
+    counter.inc()             // 100
+
+输出结果都是 100，证明上例中 counter 这个对象中的 this 是指向 global 的，因此在对象中直接定义的箭头函数中的 this 也指向 global。
+
+再来看这个例子：
+
+    this.cnt = 100
+    const counter = {
+      cnt: 50,
+      inc: function() {
+        console.log(this.cnt)
+        setTimeout(() => console.log(this.cnt), 1000)
+      }
+    }
+
+    counter.inc()  // 50 50
+
+此例中，两个输出都是 50，说明函数中的 this，即普通函数和箭头函数中的 this，都指向 counter 对象。首先，第一个 this 指向 counter 是很好理解的，因为 `counter.inc()`，inc() 运行在 counter 对象上。那为什么第二个 this 也指向 counter 呢，因为第二个 this 所处的箭头函数，它在 inc() 函数中定义，因此它往外找 this 的时候，马上就找到了 inc() 中的 this，而 inc() 中的 this 是指向 counter 对象的，所以箭头函数中的 this 也指向 counter 对象。
+
+[箭头函数中 this 的用法](https://github.com/zhengweikeng/blog/issues/11)
+
 ### var / let / const
 
 前面说道，因为 var 定义的变量没有块级作用域，所以导致了各种问题和各种 hacky 的做法。于是，从 ES6 开始，引用了 let/const 来解决这个问题。简单地说，let/const 定义的变量具有块级作用域，let 定义的是变量，const 定义常量。
