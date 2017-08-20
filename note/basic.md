@@ -399,6 +399,8 @@ JavaScript 虽然自身只有一个线程，但在底层，它是可以调用用
 
 所以，整体上是这样的，JavaScript 代码运行时，只有一个线程，当它需要做一些复杂操作，必须交给第三方模块来实现的，它在 JavaScript 线程上启动第三方模块，调用它的接口，第三方模块内部可能使用多个线程来完成这个任务，但最终将结果返回给 JavaScript 时，它必须把结果通知到 JavaScript 线程上。
 
+(深入学习一下 ReactNative 中 React 和 NativeModule 是怎么通信的。)
+
 (调用第三方模块，也可以理解成，这些第三方模块实际是由浏览器实现的功能，由浏览器提供的接口，比如访问网络。JavaScript 调用这些由浏览器提供的 API 时，浏览器可能会通过其它线程来完成。)
 
 换一个角度来理解，先不考虑用 node 实现的服务端。来看在浏览器中运行 JavaScript 的情况。(Chrome) 浏览器为每个 Tab 分配一个进程，每个进程中都有多个线程，其中就有一个 JavaScript 引擎线程，浏览器用这个线程来执行 JavaScript 代码，如果 JavaScript 代码中要执行那些非 JavaScript 能够实现的功能，它实际是调用浏览器提供的接口，然后由浏览器来启动其它模块实现，然后把结果再通知回 JavaScript 线程。
@@ -414,3 +416,31 @@ JavaScript 虽然自身只有一个线程，但在底层，它是可以调用用
 >  - Http 请求线程
 
 > 其实 (Ajax) 请求确实是异步的，这请求是由浏览器新开一个线程请求...
+
+### JS 方法参数，是传值还是传引用?
+
+[Is JavaScript a pass-by-reference or pass-by-value language?](https://github.com/simongong/js-stackoverflow-highest-votes/blob/master/questions21-30/parameter-passed-by-value-or-reference.md)
+
+[JavaScript 是传值调用还是传引用调用?](https://github.com/nodejh/nodejh.github.io/issues/32)
+
+答案，既不是传值，也不是传引用，而是 call-by-sharing，也可以理解成传引用的值。
+
+ruby / python / java 也是这样，完全理解。
+
+例子：
+
+    function changeStuff(a, b, c) {
+      a = a * 10;
+      b.item = "changed";
+      c = {item: "changed"};
+    }
+
+    var num = 10;
+    var obj1 = {item: "unchanged"};
+    var obj2 = {item: "unchanged"};
+
+    changeStuff(num, obj1, obj2);
+
+    console.log(num);           // 10
+    console.log(obj1.item);     // changed
+    console.log(obj2.item);     // unchanged
