@@ -1,5 +1,6 @@
 // var exec = require('child_process').exec
 var querystring = require('querystring')
+var fs = require('fs')
 
 function start(res, postData) {
   console.log('Request handler "start" was called.')
@@ -35,7 +36,23 @@ function upload(res, postData) {
   res.end()
 }
 
+function show(res, postData) {
+  console.log('Request handler "show" was called.')
+  fs.readFile('/tmp/test.png', 'binary', function(err, file) {
+    if (err) {
+      res.writeHead(500, {'Content-Type': 'text/plain'})
+      res.write(err + '\n')
+      res.end()
+    } else {
+      res.writeHead(200, {'Content-Type': 'image/png'})
+      res.write(file, 'binary')
+      res.end()
+    }
+  })
+}
+
 module.exports = {
   start,
-  upload
+  upload,
+  show
 }
