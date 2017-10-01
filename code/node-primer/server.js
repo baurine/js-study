@@ -6,7 +6,15 @@ function start(route, handle) {
     var pathname = url.parse(req.url).pathname
     console.log(`Request for ${pathname} received.`)
 
-    route(handle, pathname, res)
+    var postData = ''
+    req.addListener('data', function(chunkData) {
+      postData += chunkData
+      console.log("Received POST data chunk '"+ chunkData + "'.");
+    })
+
+    req.addListener('end', function() {
+      route(handle, pathname, res, postData)
+    })
   }
 
   http.createServer(onResp).listen(8888)
