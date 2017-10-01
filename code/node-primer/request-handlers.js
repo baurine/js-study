@@ -1,8 +1,10 @@
 // var exec = require('child_process').exec
-var querystring = require('querystring')
-var fs = require('fs')
+var querystring = require('querystring'),
+    fs = require('fs'),
+    formidable = require('formidable')
+// don't forget to run `npm install formidable`
 
-function start(res, postData) {
+function start(res, req) {
   console.log('Request handler "start" was called.')
   // exec('ls -lah', function(err, stdout, stderr) {
   //   res.writeHead(200, {"Content-Type": "text/plain"});
@@ -16,9 +18,9 @@ function start(res, postData) {
   'charset=UTF-8" />'+
   '</head>'+
   '<body>'+
-  '<form action="/upload" method="post">'+
-  '<textarea name="text" rows="20" cols="60"></textarea>'+
-  '<input type="submit" value="Submit text" />'+
+  '<form action="/upload" method="post" enctype="multipart/form-data">'+
+  '<input type="file" name="upload" />'+
+  '<input type="submit" value="Upload file" />'+
   '</form>'+
   '</body>'+
   '</html>'
@@ -28,12 +30,22 @@ function start(res, postData) {
   res.end()
 }
 
-function upload(res, postData) {
+function upload(res, req) {
   console.log('Request handler "upload" was called.')
-  var text = querystring.parse(postData).text
-  res.writeHead(200, {'Content-Type': 'text/plain'})
-  res.write(`You have sent the text: ${text}`)
-  res.end()
+  // var text = querystring.parse(postData).text
+  // res.writeHead(200, {'Content-Type': 'text/plain'})
+  // res.write(`You have sent the text: ${text}`)
+  // res.end()
+  var form = new formidable.IncomingForm()
+  console.log('about to parse')
+  form.parse(req, function(err, fields, files) {
+    console.log('parse done')
+    fs.renameSync(files.upload.path, '/tmp/test.png')
+    res.writeHead(200, {'Content-Type': 'text/html'})
+    res.write('received image: <br/>')
+    res.write('<image src="/show" />')
+    res.end()
+  })
 }
 
 function show(res, postData) {
