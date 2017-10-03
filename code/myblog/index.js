@@ -1,11 +1,9 @@
 var express = require('express')
 var app = express()
+var indexRouter = require('./routes/index')
+var usersRouter = require('./routes/users')
 
-app.get('/', function(req, res) {
-  res.send('hello express')
-})
-app.get('/users/:name', function(req, res) {
-  res.send('hello ' + req.params.name)
-})
+app.use('/', indexRouter)
+app.use('/users', usersRouter)
 
 app.listen(3000)
