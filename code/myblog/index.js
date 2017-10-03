@@ -50,7 +50,8 @@ app.locals.blog = {
 };
 
 // 添加模板必需的三个变量
-app.use(function (req, res, next) {
+app.use(function(req, res, next) {
+  console.log(config)
   res.locals.user = req.session.user;
   res.locals.success = req.flash('success').toString();
   res.locals.error = req.flash('error').toString();
@@ -91,7 +92,11 @@ app.use(function (err, req, res, next) {
   });
 });
 
-// 监听端口，启动程序
-app.listen(config.port, function () {
-  console.log(`${pkg.name} listening on port ${config.port}`);
-});
+if (module.parent) {
+  module.exports = app;
+} else {
+  // 监听端口，启动程序
+  app.listen(config.port, function () {
+    console.log(`${pkg.name} listening on port ${config.port}`);
+  });
+}
