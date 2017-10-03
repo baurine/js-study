@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test mocha --harmony test",
-    "start": "supervisor --harmony index"
+    "start": "NODE_ENV=production pm2 start index.js --node-args='--harmony' --name 'myblog'"
   },
   "author": "",
   "license": "ISC",
