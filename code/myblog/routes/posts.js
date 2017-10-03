@@ -62,7 +62,23 @@ router.get('/create', checkLogin, function(req, res, next) {
 
 // GET /posts/:postId 单独一篇的文章页
 router.get('/:postId', function(req, res, next) {
-  res.send(req.flash());
+  var postId = req.params.postId;
+
+  Promise.all([
+    PostModel.getPostById(postId),// 获取文章信息
+    PostModel.incPv(postId)// pv 加 1
+  ])
+  .then(function (result) {
+    var post = result[0];
+    if (!post) {
+      throw new Error('该文章不存在');
+    }
+
+    res.render('post', {
+      post: post
+    });
+  })
+  .catch(next);
 });
 
 // GET /posts/:postId/edit 更新文章页
