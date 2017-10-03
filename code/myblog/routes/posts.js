@@ -7,7 +7,15 @@ var checkLogin = require('../middlewares/check').checkLogin;
 // GET /posts 所有用户或者特定用户的文章页
 //   eg: GET /posts?author=xxx
 router.get('/', function(req, res, next) {
-  res.render('posts');
+  var author = req.query.author;
+
+  PostModel.getPosts(author)
+    .then(function (posts) {
+      res.render('posts', {
+        posts: posts
+      });
+    })
+    .catch(next);
 });
 
 // POST /posts 发表一篇文章
