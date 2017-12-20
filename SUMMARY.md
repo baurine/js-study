@@ -8,6 +8,7 @@
     * [Generator / Async](note/generator.md)
 * React & Redux
     * [ReactNative Misc](note/react-native-misc.md)
+    * [Redux Note](note/redux-note.md)
     * [Redux-Saga](note/redux-saga.md)
 * [Node](note/node-readme.md)
     * [NPM & Yarn](note/node-npm-yarn.md)
