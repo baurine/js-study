@@ -2,6 +2,17 @@
 
 Learn Javascript.
 
+根据 [2017 前端技术发展回顾](https://zhuanlan.zhihu.com/p/32119668) 一文中的总结，还有以下技术需要进一步了解或学习：
+
+- Webpack / Parcel
+- PWA (Progressive Web App)
+- WebAssembly
+- Serverless 架构
+- CSS-in-JS: styled-components, Emotion ...
+- React Router 4
+- TypeScript
+- 服务端渲染框架
+
 ## Notes
 
 * JavaScript Basic
