@@ -9,7 +9,6 @@ Learn Javascript.
 - Serverless 架构
 - CSS-in-JS: styled-components ...
 - React Router 4
-- TypeScript
 - 服务端渲染框架
 
 ## Notes
@@ -19,6 +18,7 @@ Learn Javascript.
     * [prototype](notes/prototype.md)
     * [Promise](notes/promise.md)
     * [Generator / Async](notes/generator.md)
+* [TypeScript](notes/typescript-note.md)
 * React & Redux
     * [ReactNative Misc](notes/react-native-misc.md)
     * [Redux Note](notes/redux-note.md)

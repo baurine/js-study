@@ -6,6 +6,7 @@
     * [prototype](notes/prototype.md)
     * [Promise](notes/promise.md)
     * [Generator / Async](notes/generator.md)
+* [TypeScript](notes/typescript-note.md)
 * React & Redux
     * [ReactNative Misc](notes/react-native-misc.md)
     * [Redux Note](notes/redux-note.md)
