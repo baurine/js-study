@@ -78,6 +78,6 @@ MobX 的四个核心概念：
 
    可以用 transaction() 函数将多个 action 合并成一个 action，在 useStrict(true) 模式下 transaction 自动开启。
 
-[示例代码](../code/mobx-egghead/index.jsx) (来自 Egghead)
+[示例代码](../codes/mobx-egghead/index.jsx) (来自 Egghead)
 
 整体比较简单，就不再详述了。需要时再仔细看。

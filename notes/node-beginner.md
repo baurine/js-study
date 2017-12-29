@@ -6,7 +6,7 @@
 
 ## Note
 
-[code 实现](../code/node-primer)
+[code 实现](../codes/node-primer)
 
 其实并不是 Node 入门，而是用 Node 开发 Web 入门，但 Node 并不完全是用来做 Web 的呀。
 

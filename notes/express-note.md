@@ -15,7 +15,7 @@ N-blog Demo：
 
 ![](../art/n-blog-post.png)
 
-[N-blog Code](../code/myblog)
+[N-blog Code](../codes/myblog)
 
 ### 第 3 章 - 启动 Express
 
