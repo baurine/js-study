@@ -220,7 +220,7 @@ Generator 函数通过 `yield xxx` 向外部传值，而外部通过 `next()` �
       console.log('Title:', title)
     })
 
-上面两段代码实现了一样的效果。[测试代码](../code/generator-test.js)
+上面两段代码实现了一样的效果。[测试代码](../codes/generator-test.js)
 
 前面说道，用 Generator 的时候，要手动调用 `next()` 很麻烦，而这里的 co 函数，可以想象得到，它的作用就是帮你自动调度 `next()` 方法，而且它可以把前一次 yield 得到的值作为下一次 `next()` 方法的参数再传进 Generator 中。
 

@@ -60,4 +60,4 @@ webpack-dev-server 还支持代理转发等功能，需要时再研究。
 
 其余略。
 
-一份比较完整的 [webpack.config.js](../code/hello-webpack/webpack.config.js)，以供平时参考。
+一份比较完整的 [webpack.config.js](../codes/hello-webpack/webpack.config.js)，以供平时参考。
