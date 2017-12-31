@@ -7,9 +7,7 @@ Learn Javascript.
 - PWA (Progressive Web App)
 - WebAssembly
 - Serverless 架构
-- CSS-in-JS: styled-components ...
 - React Router 4
-- 服务端渲染框架
 
 ## Notes
 
@@ -41,3 +39,4 @@ Learn Javascript.
 1. [Sike React](https://github.com/baurine/sike-react)
 1. [Vue Study](https://github.com/baurine/vue-study)
 1. [Meteor Study](https://github.com/baurine/meteor-study)
+1. [Next.js Study](https://github.com/baurine/nextjs-study)
