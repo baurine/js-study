@@ -19,4 +19,6 @@
 1. 发送系统 Notification
 1. 通过 electron-packager 打包 APP
 
-有空时写个什么 Electron APP 好呢？
+## Todo
+
+有空时写个什么 Electron APP 好呢？要不就跟着 [Learn Electron in Less than 60 Minutes - Free Beginner's Course](https://www.youtube.com/watch?v=2RxHQoiDctI) 这个教程实现一个 Electron Demo。

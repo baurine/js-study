@@ -22,3 +22,5 @@
 * Tools
     * [Webpack](notes/webpack-note.md)
 * [Electron](notes/electron-note.md)
+* [PWA](notes/pwa-note.md)
+

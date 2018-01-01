@@ -4,10 +4,9 @@ Learn Javascript.
 
 根据 [2017 前端技术发展回顾](https://zhuanlan.zhihu.com/p/32119668) 一文中的总结，还有以下技术需要进一步了解或学习：
 
-- PWA (Progressive Web App)
 - WebAssembly
-- Serverless 架构
 - React Router 4
+- Serverless 架构
 
 ## Notes
 
@@ -32,6 +31,7 @@ Learn Javascript.
 * Tools
     * [Webpack](notes/webpack-note.md)
 * [Electron](notes/electron-note.md)
+* [PWA](notes/pwa-note.md)
 
 其它相关的项目：
 
