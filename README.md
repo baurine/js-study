@@ -31,6 +31,7 @@ Learn Javascript.
     * [Express Note](notes/express-note.md)
 * Tools
     * [Webpack](notes/webpack-note.md)
+* [Electron](notes/electron-note.md)
 
 其它相关的项目：
 
