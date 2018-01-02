@@ -5,6 +5,7 @@
 - [Electron 文档 - 快速入门](https://electronjs.org/docs/tutorial/quick-start)
 - [Learn Electron in Less than 60 Minutes - Free Beginner's Course](https://www.youtube.com/watch?v=2RxHQoiDctI)
 - [Build an Electron App in Under 60 Minutes](https://www.youtube.com/watch?v=kN1Czs0m1SU)
+- [初探 Electron - 理论篇](http://jartto.wang/2018/01/03/first-exploration-electron/)
 
 ## Note
 
