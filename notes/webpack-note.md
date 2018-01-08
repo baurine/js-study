@@ -4,6 +4,7 @@
 
 - [webpack 3 零基础入门教程](http://webpackbook.rails365.net/466996) | [GitHub](https://github.com/hfpp2012/hello-webpack)
 - [webpack 官方指南中文翻译](https://doc.webpack-china.org/guides/)
+- [深入浅出 Webpack](https://github.com/gwuhaolin/dive-into-webpack)
 
 ## Note 1
 
