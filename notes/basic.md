@@ -2,6 +2,14 @@
 
 记录一些 JavaScript 的基础知识。
 
+- 闭包
+- 立即执行函数 (IIFE)
+- this
+- var / let / const
+- ES6 中 let/const 的临时死区
+- 理解 JS 的单线程
+- JS 方法参数，是传值还是传引用?
+
 ## Note 1
 
 ### 闭包
@@ -421,6 +429,41 @@ this 的值，概括起来很简单，就是一句话，当前函数执行在哪
 但是如果用 node 来跑上面两段代码，得到的结果是一样的。因为对于 node 来说，函数外用 var 定义的也不再是全局变量，但函数内 var 还是没有块级作用域。
 
 所以没有特殊的话，用 let/const 完全替代 var 吧。
+
+### ES6 中 let/const 的临时死区
+
+- [深入 Javascript 的 const、let 和块级作用域](https://juejin.im/entry/5ae14c08518825673d6d03f2)
+- [[译] JavaScript 变量的生命周期：为什么 let 不存在变量提升](https://www.qcyoung.com/2016/08/03/%E3%80%90%E8%AF%91%E3%80%91JavaScript%20%E5%8F%98%E9%87%8F%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%20let%20%E4%B8%8D%E5%AD%98%E5%9C%A8%E5%8F%98%E9%87%8F%E6%8F%90%E5%8D%87/)
+
+我们常说 var 存在变量提升，在一个函数中任何地方用 `var varName` 声明的变量，实际执行时都会提升到函数的最开始执行，所以 var 没有块级作用域，它的作用域是函数。
+
+在 ES6 中为 let/const 增加了块级作用域，它们仅在块级作用域内生效，因此它们声明的变量不会像 var 一样提升到函数的最开始执行。
+
+但是，这里有一个很微小的细节。
+
+平时我们在其它地方用 `typeof a` 访问一个没有声明或初始化的变量时，得到的输出是 `undefined`，直接访问一个没有声明的变量的值，如 `console.log(a)`，得到的输出是异常错误 `ReferenceError`，如果访问一个在后面用 var 声明的变量的值，则得到 `undefined` 的输出。
+
+但是，如果进入一个块级作用域，去访问一个后面才用 let/const 声明的变量，无论是直接取它的值，如 `console.log(a)` 还是用 typeof 去访问它的类型，如 `typeof a`，得到的输出，都是异常错误 `ReferenceError`，因为这里存在一个临时死区的概念。
+
+从某个变量所处的块级作用域的开始，到这个变量被 let/const 声明的这一段区域，称之为这个变量的临时死区。在这个死区内，这个变量无法被访问，无论是直接取值还是用 typeof 访问其类型。
+
+示例代码：
+
+    function test3() {
+      try {
+        console.log('-----test3');
+
+        console.log('typeof a:', typeof a);
+        console.log('a: ', a);
+
+        let a = 5
+        console.log('a:', a);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+更多示例代码见 [dead-zone.js](../codes/es6-dead-zone/dead-zone.js)。
 
 ### 理解 JS 的单线程
 
