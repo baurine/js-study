@@ -7,6 +7,7 @@
 - [webpack 3 零基础入门教程](http://webpackbook.rails365.net/466996) | [GitHub](https://github.com/hfpp2012/hello-webpack)
 - [webpack 官方指南中文翻译](https://doc.webpack-china.org/guides/)
 - [深入浅出 Webpack](https://github.com/gwuhaolin/dive-into-webpack)
+- [webpack 从此不再是我们的痛点 — 核心基础](https://juejin.im/post/5ad1d85f518825651d081c68)
 
 Note for [webpack 3 零基础入门教程](http://webpackbook.rails365.net/466996)
 
@@ -257,9 +258,15 @@ extract-text-webpack-plugin，可以把 css 放置到一个单独的文件中。
       }
     }
 
+使用了 ExtractTextPlugin 后，css 是放到一个单独文件中了，所以实际 style-loader 是没有作用了，可以不再需要它，上面用 `fallback: 'style-loader'` 可以是为了防止 ExtractTextPlugin 出错后退回到用 style-loader 吧 (如果是这样的话我觉得是错误的设计，出错了应该是去找到原因并修复，而不是让它 fallback)。
+
 编译以后会在 dist 目录下生成 style.css 文件。
 
+另外，还可以使用 postcss-loader 和 autoprefix 来处理 css3 在各大浏览器的兼容问题，自动为一些 css3 属性加上前缀。(具体怎么用还需要再看文档)
+
 更多解释：
+
+> css-loader 使你能够使用类似 @import 和 url（...) 的方法实现 require 的功能，style-loader 将所有的计算后的样式加入页面中，二者组合在一起使你能够把样式表嵌入 webpack 打包后的 js 文件中。(没错，经过验证，style-loader 生成的 style 仅打包在相应的 js 文件中，不会直接输出到 html 中，检查生成的 html，head 里并没有相应的 style 标签，是 js 在执行时再动态地把 style 放到 html 的 head 中。)
 
 > 因此，我们这样配置后，遇到后缀为 .css 的文件，webpack 先用 css-loader 加载器去解析这个文件，遇到 "@import" 等语句就将相应样式文件引入 (所以如果没有 css-loader，就没法解析这类语句)，最后计算完的 css，将会使用 style-loader 生成一个内容为最终解析完的 css 代码的 style 标签，放到 head 标签里。
 
@@ -304,6 +311,8 @@ webpack-dev-server 没有自己独立的配置文件，反正它都是要读取 
 babel 需要 env 和 react 两种 presets 来处理 react 代码，每一个 preset 实际都是一系列 babel 插件的集合，我们同时需要安装这两种 presets：
 
     $ npm install --save-dev babel-preset-react babel-preset-env
+
+env preset 用来转换 ES6 语法，react preset 用来转换 JSX 语法，如果需要用到 ES7 的语法，那么还需要 stage-0 preset。
 
 babel 有自己独立的配置文件 .bablerc，我们创建这个文件，告诉 babel 需要依赖 env 和 react 两个 presets。
 
@@ -611,3 +620,19 @@ DefinePlugin 的使用：
         })
       ]
     })
+
+### 总结
+
+webpack 配置文件中的几个重要的属性：
+
+- entry
+- output
+- plugins
+- module
+
+一些用于开发模式的属性：
+
+- devtool
+- devServer
+
+这篇文章 - [webpack 从此不再是我们的痛点 — 核心基础](https://juejin.im/post/5ad1d85f518825651d081c68) 有每个选项的详细介绍。不过这篇文章是基于 webpack4 的，但没关系，基础理念是一样的。
