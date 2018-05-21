@@ -94,6 +94,10 @@ webpack4 将 core 和 cli 进行了分离，命令行的 webpack 命令挪到了
 
 使用这个插件后，不再需要 style-loader。
 
+不过这个插件官方说不推荐在 webpack4 上使用，在 webpack4 上使用 mini-css-extract-plugin。
+
+mini-css-extract-plugin 目前只是基本可以使用，但还有一些功能没有，比如没有 publicPath 选项，所以如果你把生成的 css 放到一个目录里 (如 dist/css/style.css)，而不是 dist 根目录下 (dist/style.css)，就会产生一些路径问题。
+
 #### 拆分多个 CSS
 
 同样使用 extrac-text-webpack-plugin，但目前暂时不需要，跳过。写 chrome extension 时可能需要，那时再看。
@@ -101,6 +105,26 @@ webpack4 将 core 和 cli 进行了分离，命令行的 webpack 命令挪到了
 #### 处理图片
 
 处理作为背景的图片，使用 file-loader 和 url-loader，url-loader 可以将体积较小的图片转成 base64。
+
+它们是这样工作的，假如配置是这样：
+
+    {
+      test: /\.(jpe?g|png|gif)$/,
+      use: [
+        {
+          loader: 'url-loader',
+          options: {
+            limit: 8192,           // 小于 8k 的图片自动转成 base64 格式，并且不会存在实体图片，否则调用 file-loader 处理
+            outputPath: 'images/', // 图片打包后存放的目录
+            name: '[name].[ext]',
+          }
+        }
+      ]
+    }
+
+假如图片体积小于 8kb，那么 url-loader 就自己处理它了，转成 base64，如果大于 8kb，那么它不处理了，直接调起 file-loader，让它接着去处理，并把 outputPath 和 name 选项也传给它。
+
+安装 url-loader 时不会自动安装 file-loader，需要自己安装。
 
 作为 img src 的图片，使用 html-withimg-loader。(webpack3 中是使用了 html-loader)
 
@@ -139,6 +163,8 @@ webpack4 将 core 和 cli 进行了分离，命令行的 webpack 命令挪到了
 使用 babel 转义 ES6 语法，依赖 babel-preset-env。转义 ES7，依赖 babel-preset-stage-0。
 
 其余略，看 webpack3 note。
+
+经过实践证明，如果你不需要在很老的浏览器上使用，目前大部分主流浏览器都能直接运行 ES6 语法的 js 代码，不需要将其转成 ES5 代码，因此，就可以不用 babel。
 
 #### 配置 webpack-dev-server
 
