@@ -4,10 +4,13 @@
 
 - [官方文档中文翻译](https://www.tslang.cn/docs/home.html)
 - [TypeScript Handbook 中文版](https://zhongsp.gitbooks.io/typescript-handbook/content/)
+- [TypeScript 入门教程](https://github.com/xcatliu/typescript-tutorial)
+- [深入挖掘 TypeScript](https://rexdainiel.gitbooks.io/typescript/)
+- [TypeScript 101](https://scrimba.com/playlist/pKwrCg)
 
-上面两个链接的内容其实是一样的。TypeScript 的文档相比 VS Code extension API 的文档就不知道好到哪里去了，还解释了一些 JavaScript 的基础问题，比如 this 指针，var 声明变量产生的问题，还比较有参考价值。
+上面第一个和第二个链接的内容其实是一样的。TypeScript 的文档相比 VS Code extension API 的文档就不知道好到哪里去了，还解释了一些 JavaScript 的基础问题，比如 this 指针，var 声明变量产生的问题，还比较有参考价值。
 
-## Note
+## Note for Handbook
 
 随便瞄了一眼，毕竟有了这么多种语言的基础后，而且比较熟练使用 JavaScript，对这样一门新的语言就没有必要一字一句地那么细致地学习。了解它的框架，思想，用到不懂时再回来细看。
 
@@ -67,3 +70,44 @@ TypeScript 使用 tsconfig.json 作为配置文件。
 TypeScript 和 React、Webpack 的配合使用。和一般 React & Webpack 项目没有什么区别，就是多了用 awesome-typescript-loader 处理 .tsx 文件。
 
 其它略，需要时再看。
+
+## Note for Others
+
+TypeScript 是 JavaScript 的超集，普通的 .js 改成 .ts 就能直接运行了。没有显式声明类型且没有赋值的变量，默认是 any 类型，如果声明时赋值了，则根据字面量自动推导出它的类型。
+
+TypeScript 的编译命令是 tsc，编译的配置文件是 tsconfig.json，用来配置编译时的各个选项。类似 Webpack 命令和它的配置文件 webpack.config.js。
+
+Webpack 可以用 ts-loader 来处理 .ts 和 .tsx 文件。
+
+**type & interface**
+
+type 关键字也可以像 interface 那样来定义一般的自定义类型，但其实它和 interface 的不完全相同，type 更侧重为类型定义别名 (type alias)。
+
+[Interface vs Type alias in TypeScript 2.7](https://medium.com/@martin_hotell/interface-vs-type-alias-in-typescript-2-7-2a8f1777af4c)
+
+它们的区别：
+
+1. interface 只可以用来定义对象类型，type 还可以用来定义 union, intersection, primitive 类型
+1. interface 定义的接口可以 merge，但 type alias 不行
+1. 如果 type alias 的类型是 union 类型，那么它不能被 extends 或 implements
+
+为 React 的 component 定义 Props 和 State 时，推荐使用 type，而不是 interface (呃...我用了 interface)
+
+**声明文件**
+
+使用第三方库时，需要引用它的声明文件。比如在 TypeScript 中使用 jQuery: `$('#foo')` 或 `jQuery('#foo')`，但 TypeScript 并不知道 $ 或 jQuery 是什么东西，这时需要用 declare 关键字来显式的声明 (类似 C 中的头文件)。
+
+    declare var jQuery: (string) => any;
+
+一般会把类型声明放到一个单独的文件中，比如 jQuery.d.ts，然后在使用到的文件开头用 `///` 表示引用 (??? 好像从来没有见到过啊):
+
+    // jQuery.d.ts
+    declare var jQuery: (string) => any;
+
+    // app.ts
+    /// <reference path='./jQuery.d.ts'/>
+    jQuery('#foo').show()
+
+常用的第三方库的声明文件都有人帮我们写好了，TypeScript 推荐使用 @types 来管理类型声明文件，比如：
+
+    npm install @types/jquery --save-dev
