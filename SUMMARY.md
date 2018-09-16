@@ -6,6 +6,7 @@
     * [prototype](notes/prototype.md)
     * [Promise](notes/promise.md)
     * [Generator / Async](notes/generator.md)
+    * [JavaScript Misc](notes/js-misc.md)
 * [TypeScript](notes/typescript-note.md)
 * [CoffeeScript](notes/coffeescript-note.md)
 * React & Redux
