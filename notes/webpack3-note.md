@@ -274,6 +274,57 @@ extract-text-webpack-plugin，可以把 css 放置到一个单独的文件中。
 
 (以上引用来自：[webpack 学习笔记 1 - css-loader & style-loader](https://blog.csdn.net/qq_38652603/article/details/73822752))
 
+**resolve-url-loader**
+
+如果在某个 scss 文件中使用了相对路径，比如 `url(./...)`，而这个 scss 文件被别的 scss 文件 import，比如：
+
+    // ./src/base/fonts.scss (字体在 ./fonts/ 目录下)
+    @font-face {
+      font-family: 'RobotoItalic';
+      src: url('../../fonts/Roboto-Italic.eot');
+      ...
+    }
+
+    // ./src/common.scss
+    @import './base/fonts';
+
+scss 中的 @import 操作，只是很简单地把目标文件的代码拷贝过来，编译后，common.css 中的代码：
+
+    // ./src/common.css
+    @font-face {
+      font-family: 'RobotoItalic';
+      src: url('../../fonts/Roboto-Italic.eot');
+      ...
+    }
+
+但 font 实际是在 common.css 的 '../fonts' 路径上，'../.../fonts' 找不到对应的字体。
+
+解决办法，使用 resolve-url-loader，在 scss 编译之后，将所有 `url()` 中的相对路径改成绝对路径。
+
+使用 resolve-url-loader 后，`./src/base/fonts.scss` 会变成：
+
+    @font-face {
+      font-family: 'RobotoItalic';
+      src: url(/packs/fonts/Roboto-Italic.eot);
+      ...
+    }
+
+resolve-url-loader 的使用，必须在 'sass-loader' 之前，实际在 'sass-loader' 之后调用。
+
+    module: {
+      rules: [
+        ...
+        {
+          test: /\.css$/,
+          use: ['style-loader', 'css-loader', 'resolve-url-loader', 'sass-loader']
+        }
+      ]
+    }
+
+参考：
+
+- [URL file import in scss file](https://github.com/webpack-contrib/sass-loader/issues/537)
+
 ### 7. 初识 webpack-dev-server
 
 webpack-dev-server 也是一个独立的插件，需要安装使用。它实际是 webpack 的一层包裹，执行它，会做几件事，它会先去执行 `webpack --d --watch`，编译打包，然后启动一个 server，根据 webpack.config.js 中的设置配置路由。

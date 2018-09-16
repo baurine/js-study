@@ -23,7 +23,8 @@
     * [Node.js 开发指南](notes/node-byvoid.md)
     * [Express Note](notes/express-note.md)
 * Tools
-    * [Webpack](notes/webpack-note.md)
+    * [Webpack3](notes/webpack3-note.md)
+    * [Webpack4](notes/webpack4-note.md)
 * [Electron](notes/electron-note.md)
 * [PWA](notes/pwa-note.md)
 * [微信小程序](notes/wx-mini-app-note.md)
