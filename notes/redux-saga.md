@@ -97,6 +97,8 @@ put 生成的也是 Plain Object，值为：
 
 当 saga 中间件接收到这样的值后，检测如果有 CALL 字段，那么就执行相应的方法，如果有 PUT 字段，则 dispatch 相应的 action。
 
+(saga 内部对通过 `yield call(deplay, 1000)` 得到的值，即 `gen.next().value` 进行处理，saga 实际是一种 generator 的调度器，是特殊调度器，不是通用调度器。所谓通用调度器，就是直接把上一个 `gen.next().value` 作为参数传到下一个 `gen.next()` 方法中)
+
 这样，call / put 变成了同步操作，得到了立即返回的 plain object，这种的操作最好测试了，不是吗？
 
     test('incrementAsync Saga test', assert => {
