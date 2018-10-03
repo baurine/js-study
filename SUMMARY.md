@@ -10,6 +10,7 @@
 * [TypeScript](notes/typescript-note.md)
 * [CoffeeScript](notes/coffeescript-note.md)
 * React & Redux
+    * [React Misc](notes/react-misc.md)
     * [ReactNative Misc](notes/react-native-misc.md)
     * [Redux Note](notes/redux-note.md)
     * [Redux-Saga](notes/redux-saga.md)
