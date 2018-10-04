@@ -27,6 +27,23 @@ React 组件传入的属性可以是任意值，甚至另一个组件。
 
 `<Answer/>` 相当于执行了 `Answer()` 函数。
 
+Ant Design 中很多组件使用了 prop 为 component 的用法：
+
+    <SubMenu
+      title={<span><Icon type='dashboard'/><span>Dashboard</span></span>}>
+      <Menu.Item>分析页</Menu.Item>
+      <Menu.Item>监控页</Menu.Item>
+      <Menu.Item>工作台</Menu.Item>
+    </SubMenu>
+
+    <Card.Meta
+      avatar={<img
+        alt=""
+        style={{ width: '64px', height: '64px', borderRadius: '32px' }}
+        src="https://gw.alipayobjects.com/zos/rmsportal/WdGqmHpayyMjiEhcKoVE.png"/>}
+      title="Alipay"
+      description="在中台产品的研发过程中，会出现不同的设计规范和实现方式，但其中往往存在很多类似的页面和组件，这些类似的组件会被抽离成一套标准规范。"/>
+
 props.children 属性，可以让我们在父组件中访问它的子元素。
 
     function Title({text, children}) {
@@ -48,6 +65,21 @@ props.children 属性，可以让我们在父组件中访问它的子元素。
 如果在 Title 的定义中将 `{children}` 移除掉，那么 `<span>community</span>` 将不会被渲染。
 
 使用 React children API 和 将 children 作为 prop 传入说的是差不多的事情，就是上面这个例子。
+
+Ant Design 中 Layout 使用了些用法：
+
+    <Layout>
+      <Sider>
+        Sider
+      </Sider>
+      <Layout>
+        <Header>Header</Header>
+        <Content>
+          {this.props.children}
+        </Content>
+        <Footer>Ant Design ©2018 Created by Ant UED</Footer>
+      </Layout>
+    </Layout>
 
 ### 高阶组件
 
@@ -173,3 +205,22 @@ render prop 模式与上面所讲基本相同，只不过将 children 属性用 
     }
 
 这个属性也不一定要叫 render，其它也可以，比如 renderItem。
+
+Ant Design 中 Table 组件使用了这种用法：
+
+    class List extends React.Component {
+      columns = [
+        {
+          title: '名称',
+          dataIndex: 'name'
+        },
+        {
+          title: '描述',
+          dataIndex: 'desc'
+        },
+        {
+          title: '链接',
+          dataIndex: 'url',
+          render: value => <a href={value}>{value}</a>
+        }
+      ]
