@@ -500,3 +500,25 @@ actionChannel，用于缓存接收的消息，相当于一个消息队列。然�
 Throttle / Debounce / Retry / Undo
 
 DONE!
+
+## Note 2
+
+在学习 dva 的过程中，对 redux-saga 有了新的认识，看 [dva note](./dva.md)。
+
+## Note 3
+
+- [Async React with Redux Saga](https://egghead.io/courses/async-react-with-redux-saga)
+
+call/fork/spawn，都是用来调用另一个函数，但有一些区别：
+
+1. call 是阻塞的，它要等待返回值，返回值返回来才继续执行
+1. fork 是非阻塞的，不用等到返回值就可以继续执行，但是最终还是要待到 fork 执行完了整个 generator 函数才可以退出
+1. spawn 是非阻塞的，但它和 fork 不一样的地方在于，它生成的 task 和 parent 是 detach 的，它有没有执行完，整个 generator 函数都可以退出
+
+select effect 是用来从 state 中取值的。
+
+可以用 throttle effect 消除抖动。
+
+    yield throttle(500, 'INPUT_CHANGE', handleInput)
+
+actionChannel 可以很方便地用来实现生产者-消费者模型。
