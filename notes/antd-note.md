@@ -1,5 +1,7 @@
 # Ant Design Note
 
+Update: Ant Design 后来官方出了一个教程，笔记放在一个单独的 repo 中 - <https://github.com/baurine/antd-course-study>
+
 ## References
 
 - [Ant Design of React](https://ant.design/docs/react/introduce-cn)

@@ -71,6 +71,119 @@ TypeScript 和 React、Webpack 的配合使用。和一般 React & Webpack 项�
 
 其它略，需要时再看。
 
+### 高级类型
+
+- [Advanced Types](https://www.typescriptlang.org/docs/handbook/advanced-types.html)
+
+内容：
+
+- Intersection Types `&`
+- Union Types `|`
+- Type Guards and Differentiating Types: `typeof` `instanceof`
+- type / interface
+- String Literal Types: `'a' | 'b' | 'c'`
+- Index types: keyof
+- Mapped types: `{ [P in keyof T]: number }`
+- Conditional Types: `T extends U ? X : Y`
+
+一个复杂的示例：
+
+    interface Action<T> {
+      payload?: T;
+      type: string;
+    }
+
+    class EffectModule {
+      count = 1;
+      message = "hello!";
+
+      delay(input: Promise<number>) {
+        return input.then(i => ({
+          payload: `hello ${i}!`,
+          type: "delay"
+        }));
+      }
+
+      setMessage(action: Action<Date>) {
+        return {
+          payload: action.payload!.getMilliseconds(),
+          type: "set-message"
+        };
+      }
+    }
+
+    // get "delay" | "setMessage"
+    type FunctionPropertyNames<T> = { [K in keyof T]: T[K] extends Function ? K : never }[keyof T];
+    // get
+    // {
+    //   delay: (input: Promise<number>) => Promise<{
+    //     payload: string;
+    //     type: string;
+    //   }>;
+    //   setMessage: (action: Action<Date>) => {
+    //     payload: number;
+    //     type: string;
+    //   };
+    // }
+    type FunctionProperties<T> = Pick<T, FunctionPropertyNames<T>>;
+    type EffectModuleFuns = FunctionProperties<EffectModule>;
+    type EffectModuleFunMap<T> =
+      T extends (input : Promise<infer U>) => Promise<Action<infer V>>
+      ? (input: U) => Action<V>
+      : T extends (action: Action<infer U>) => Action<infer V>
+        ? (input: U) => Action<V>
+        : never
+
+    type ConnectedEffectModule = {
+      [K in keyof EffectModuleFuns]: EffectModuleFunMap<EffectModuleFuns[K]>
+    }
+
+    // 修改 Connect 的类型，让 connected 的类型变成预期的类型
+    type Connect = (module: EffectModule) => ConnectedEffectModule;
+
+    const connect: Connect = m => ({
+      delay: (input: number) => ({
+        type: "delay",
+        payload: `hello 2`
+      }),
+      setMessage: (input: Date) => ({
+        type: "set-message",
+        payload: input.getMilliseconds()
+      })
+    });
+
+    type Connected = {
+      delay(input: number): Action<string>;
+      setMessage(action: Date): Action<number>;
+    };
+
+    export const connected: Connected = connect(new EffectModule());
+
+示例 2：
+
+    interface User {
+      name: string,
+      age: number,
+      adult: boolean
+    }
+
+    // get string | number
+    type UserKeysTypes = User['name' | 'age']
+
+示例 3：
+
+    type MyUnion = 'a' | 'b' | 'c'
+    type UnionArr = MyUnion[]
+    const unionArr: UnionArr = ['a']
+    const unionArr2: UnionArr = ['a', 'b']
+    const unionArr3: UnionArr = ['a', 'b', 'c']
+    const unionArr4: UnionArr = ['a', 'b', 'c', 'd'] // wrong
+
+    type Weeks = 'Mon' | 'Tue' | 'Wed' | 'Thur' | 'Fri' | 'Sat' | 'Sun'
+    type WeeksArr = Weeks[]
+    const weeks: WeeksArr = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
+    const weeks2: WeeksArr = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun', 'hehe'] //wrong
+
 ## Note for Others
 
 TypeScript 是 JavaScript 的超集，普通的 .js 改成 .ts 就能直接运行了。没有显式声明类型且没有赋值的变量，默认是 any 类型，如果声明时赋值了，则根据字面量自动推导出它的类型。
