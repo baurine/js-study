@@ -18,6 +18,7 @@
     * [MobX](notes/mobx-note.md)
     * [Ant Design](notes/antd-note.md)
     * [Material-UI](notes/material-ui-note.md)
+* [RxJS](notes/rxjs-note.md)
 * [Node](notes/node-readme.md)
     * [NPM & Yarn](notes/node-npm-yarn.md)
     * [Node Beginner](notes/node-beginner.md)
