@@ -28,7 +28,7 @@ Learn Javascript.
     * [Material-UI](notes/material-ui-note.md)
 * [RxJS](notes/rxjs-note.md)
 * [Node](notes/node-readme.md)
-    * [NPM & Yarn](notes/node-npm-yarn.md)
+    * [NPM & Yarn & nvm](notes/node-npm-yarn.md)
     * [Node Beginner](notes/node-beginner.md)
     * [Node.js 开发指南](notes/node-byvoid.md)
     * [Express Note](notes/express-note.md)

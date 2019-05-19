@@ -1,4 +1,4 @@
-# NPM & Yarn
+# NPM & Yarn & nvm
 
 ## NPM 使用
 
@@ -76,3 +76,35 @@ Resources：
         yarn install
         // 或
         yarn
+
+## nvm
+
+使用 nvm 管理多版本的 node
+
+Resources:
+
+- [node 版本控制工具 nvm](https://www.jianshu.com/p/0cfeed299f2a)
+- [Official GitHub Repo](https://github.com/nvm-sh/nvm)
+
+### 基本使用
+
+1. 安装
+
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+
+1. 查看 node 版本
+
+        nvm ls-remote
+        nvm ls-remote --lts
+        nvm list
+        nvm current
+
+1. 安装指定版本的 node
+
+        nvm install 10.15.3
+
+1. 使用指定版本的 node
+
+        nvm use 10.15.3
+
+更多使用查看官方文档
