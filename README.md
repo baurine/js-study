@@ -26,6 +26,7 @@ Learn Javascript.
     * [MobX](notes/mobx-note.md)
     * [Ant Design](notes/antd-note.md)
     * [Material-UI](notes/material-ui-note.md)
+    * [Gatsby](notes/gatsby.md)
 * [RxJS](notes/rxjs-note.md)
 * [Node](notes/node-readme.md)
     * [NPM & Yarn & nvm](notes/node-npm-yarn.md)
