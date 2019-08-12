@@ -37,6 +37,7 @@ Learn Javascript.
 * Tools
     * [Webpack3](notes/webpack3-note.md)
     * [Webpack4](notes/webpack4-note.md)
+    * [ESLint & Prettier](notes/eslint-prettier.md)
 * [Electron](notes/electron-note.md)
 * [PWA](notes/pwa-note.md)
 * [微信小程序](notes/wx-mini-app-note.md)
