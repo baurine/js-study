@@ -1,11 +1,13 @@
 # Gatsby Note
 
-links:
+Links:
 
 - [gatsby-step-by-step](https://github.com/baurine/gatsby-step-by-step)
 - [try-gatsby](https://github.com/baurine/try-gatsby)
 - [gatsby blog](https://github.com/baurine/gatsby-blog)
 - [why gatsby blazing fast](https://baurine.netlify.com/2019/06/05/why-gatsby-blazing-fast/)
+- [build gatsby theme](https://github.com/baurine/build-gatsby-theme)
+- [理解 gatsby theme](https://baurine.netlify.com/2019/08/15/gatsby-theme/)
 
 ## Gatsby Theme
 
@@ -18,7 +20,7 @@ links:
 
 theme 就是把原来的 starter 转变为一个 npm package，作为一个 gatsby 项目的依赖，当这个 theme 有更新时，项目也可以随时更新这个依赖。
 
-在此基本上又创造出 theme starter 的概念，用来替代原来的 starter，它相比原来的 starter，非常轻量级，仅仅是为你的项目初始化了依赖了哪些 theme 及一些额外的简单配置。(其实个人认为这个 theme starter 没有存在的必要，会让使用者迷惑，直接用 `gatsby new` 生成一个所有项目都通用的 scaffold 即可，里面有一个默认的 theme，然后你可以根据需要替换掉这个默认的 theme。)
+在此基本上又创造出 theme starter 的概念，用来替代原来的 starter，它相比原来的 starter，非常轻量级，仅仅是为你的项目初始化了依赖了哪些 theme 及一些额外的简单配置。(其实个人认为这个 theme starter 没有存在的必要，会让使用者迷惑，直接用 `gatsby new` 生成一个所有项目都通用的 scaffold 即可，里面有一个默认的 theme，然后你可以根据需要替换掉这个默认的 theme。后来看了一遍官网 tutorial，确实如此，完全可以不需要 theme starter，最简单的新项目只需要一个 gatsby-config.js 和 package.json 就行。)
 
 就这么简单理解就行了，初始阶段先学习怎么使用 theme 就行，后面再深入学习如何自己写一个 theme (egghead 上有相应的课程)。
 
@@ -26,11 +28,7 @@ theme 就是把原来的 starter 转变为一个 npm package，作为一个 gats
 
 PS: 从上面的官方文档上学习到了 `yarn workspace` 命令的用法，如何在一个 node.js 项目中管理多个子项目。
 
-### egghead - Gatsby Theme Authoring
-
-- [egghead - Gatsby Theme Authoring](https://egghead.io/courses/gatsby-theme-authoring)
-
-先跳过。
+照着官网 tutorial - [Building a Theme](https://www.gatsbyjs.org/tutorial/building-a-theme/) 把整个流程跑了一遍，很好理解，代码和 note 整理到一个单独的 repo - [build gatsby theme](https://github.com/baurine/build-gatsby-theme) 了。
 
 ## MDX
 
