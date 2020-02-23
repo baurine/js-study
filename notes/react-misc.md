@@ -224,3 +224,147 @@ Ant Design 中 Table 组件使用了这种用法：
           render: value => <a href={value}>{value}</a>
         }
       ]
+      ...
+    }
+
+## i18n
+
+两种常用方案：
+
+- [react-intl](https://github.com/formatjs/react-intl)
+- [react-i18next & i18next](https://github.com/i18next/react-i18next)
+
+react-intl 使用更简单，功能也更简单；react-i18next 是 i18next 的 react 封装，功能更强大，使用也复杂一些，比如支持动态加载语言包。
+
+ant design 使用的是 react-intl 方案。
+
+- [Ant Design 实战教程 - 国际化](https://www.yuque.com/ant-design/course/aut0sr)
+
+ant design 里分 ant design 自身组件的国际化 (使用 LocaleProvider)，以及业务本身的国际化 (使用 react-intl & IntlProvider)。
+
+### react-intl
+
+示例：[dm-portal: add i18n support](https://github.com/pingcap/dm/pull/476)
+
+首先在最顶层容器使用 IntlProvider。
+
+```ts
+const DmLayout: React.FC = ({ children }) => {
+  const [locale, setLocale] = useState('en')
+
+  return (
+    <Container>
+      <div className="change-locale">
+        <Radio.Group
+          value={locale}
+          onChange={(e: any) => setLocale(e.target.value)}
+        >
+          <Radio.Button key="en" value={'en'}>
+            English
+          </Radio.Button>
+          <Radio.Button key="zh" value={'zh'}>
+            中文
+          </Radio.Button>
+        </Radio.Group>
+      </div>
+      <IntlProvider locale={locale} messages={getMessages(locale)}>
+        {children}
+      </IntlProvider>
+    </Container>
+  )
+}
+```
+
+在 component 中使用 `useIntl()` hook / `formatMessage()` 方法 / FormattedMessage component 进行国际化。
+
+```ts
+...
+import { FormattedMessage, useIntl } from 'react-intl'
+
+function MyComponent(...) {
+  const intl = useIntl()
+
+  return (
+    <Modal
+      title={intl.formatMessage(
+        { id: 'binlog_filter' },
+        { target: targetItem.key }
+      )}
+      ...
+    >
+      <WaringText>
+        <FormattedMessage id="binlog_modify_warning" />
+      </WaringText>
+      ...
+    </Modal>
+  )
+}
+```
+
+### react-i18next / i18next
+
+使用文档：
+
+- [react-i18next](https://react.i18next.com/)
+- [i18next](https://www.i18next.com/)
+
+(其实我没太明白 react-i18next 存在的意义，感觉在 react 中直接用 i18next 也是可以的...)
+
+使用：
+
+1. 初始化: `i18n.init(...)`
+1. 在子 component 中使用 `const {t, i18n} = useTranslations()` hook
+
+react-i18next 不需要在顶层容器使用 Provider。(?? 好奇是如何做到的)
+
+动态改变语言：`i18n.changeLanguage(lng)`
+
+获取当前语言：`i18n.language`
+
+示例，初始化：
+
+```js
+function init() {
+  i18next
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      resources: {},
+      defaultNS: 'defNS',
+      fallbackLng: 'en',
+      interpolation: {
+        escapeValue: false
+      }
+    })
+}
+
+function addTranslations(res) {
+  for (const lng in res) {
+    const lngIETF = lng.replace(/_/g, '-')
+    i18next.addResourceBundle(lngIETF, 'defNS', res[lng], true, false)
+  }
+}
+
+init()
+```
+
+在 component 中使用：
+
+```ts
+import { useTranslation } from 'react-i18next'
+
+function StatisCard({ detail }: { detail: StatementDetailInfo }) {
+  const { t, i18n } = useTranslation()
+
+  return (
+    <div className={styles.statement_statis}>
+      <p>
+        {t('statement.common.sum_latency')}:{' '}
+        {getValueFormat('ns')(detail.sum_latency, 2, null)}
+      </p>
+      ...
+    </div>
+  )
+}
+```
+

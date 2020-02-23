@@ -2,7 +2,7 @@
 
 待补充完善。
 
-react hooks 要求你对闭包的理解很深刻，否则理解起来会觉得困难。
+react hooks 要求你对闭包的理解很深刻，否则理解起来会觉得困难，用起来也会遇到很多坑。
 
 ## 参考
 
@@ -37,7 +37,7 @@ useEffect，和 useState 一样最常用，但也是最复杂，坑最多的用�
 
 useEffect 在 layout/painted 之后 (即 render() --> DOM 更新之后) 触发，如果需要与 layout 同步触发，使用 useLayoutEffect (有没有例子?)。
 
-useEffect 默认每次 render 后都会重新执行，为了提高性能，可以给它传递第二个参数 - deps 数组。如果 render 后 deps 数组没有变化，那么 useEffect 中的 fn 就不会再次执行。关键就是这是这个 deps 数组，如果设置错了，结果就有可能不符合预期。
+useEffect 默认每次 render 后都会重新执行，为了提高性能，可以给它传递第二个参数 - deps 数组。如果 render 后 deps 数组没有变化，那么 useEffect 中的 fn 就不会再次执行。关键就是这是这个 deps 数组，如果设置错了，结果就有可能不符合预期。(而且有可能引起死循环)
 
 deps 数组中可以包含方法。
 
@@ -60,7 +60,7 @@ function MyComponent(props) {
 const [state, dispatch] = useReducer(reducer, initialState, init)
 ```
 
-setState/dispatch 是稳定的，不会在 re-render 时改变，所以这些方法不需要加入到 useEffect/useCallback 的 deps 中
+setState/dispatch 是稳定的，不会在 re-render 时改变，所以这些方法不需要加入到 useEffect/useCallback 的 deps 中。
 
 useReducer 在移除 useEffect 中的依赖时很有帮助，可以看这篇文章 - [Hooks, State, Closures, and useReducer](https://adamrackis.dev/state-and-use-reducer/)
 
@@ -72,6 +72,8 @@ useReducer 在移除 useEffect 中的依赖时很有帮助，可以看这篇文�
 const memoizedCallback = useCallback(() => {
   doSomething(a, b)
 }, [a, b])
+// 使用
+// memoizedCallback(a, b)
 ```
 
 // TODO: 增加例子
@@ -83,6 +85,8 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b])
 ```
 
 // TODO: 增加例子
+
+现在明白了，useCallback() 是用来缓存方法，useMemo() 是用来缓存变量，这样在每次 render() 时不会生成新的方法或值，提高性能。
 
 ### useRef
 
@@ -107,6 +111,8 @@ useImperativeHandle (命令式，而非声明式的 handle)，和 useRef/forward
 调试时使用，在 DevTools 中显示额外信息。
 
 ## 常见 Case
+
+### How to get the previous props or state?
 
 FAQ 中的 "How to get the previous props or state?"，现在理解了。
 
@@ -166,7 +172,25 @@ function Example({ someProp }) {
 其它方法，
 
 1. 使用 setState(prevState => {...})
-1. 使用 useReducer ... 
-1. 使用 useCallback ...
+1. 使用 useReducer ...
+1. 使用 useCallback ... (缓存住依赖的方法，这样每次 render 后这个依赖的方法不会被修改)
 
 待续，FAQ 中总结了很多用法，很有价值。
+
+### 在子 component 中修改 context
+
+(但要小心引起死循环)
+
+- [How to update React Context from inside a child component?](https://stackoverflow.com/questions/41030361/how-to-update-react-context-from-inside-a-child-component)
+- [在嵌套组件中更新 Context](https://zh-hans.reactjs.org/docs/context.html#updating-context-from-a-nested-component)
+
+从一个在组件树中嵌套很深的组件中更新 context 是很有必要的。在这种场景下，你可以通过 context 传递一个函数，使得 consumers 组件更新 context。
+
+比如：
+
+```js
+export const ThemeContext = React.createContext({
+  theme: themes.dark,
+  toggleTheme: () => {}
+})
+```

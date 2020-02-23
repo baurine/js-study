@@ -44,9 +44,32 @@ function loadStories() {
 configure(loadStories, module)
 ```
 
+这个文件的主要作用就是批量加载匹配的 .stories.js 文件。
+
 require.context 是 webpack 提供的一个方法，它的返回值是一个函数，这个函数可以用来从外部加载一个 js 文件，同时这个函数内部又有三个属性，这三个属性也是函数，其中之一就是 keys() 方法，keys() 方法的结果是执行 require.context() 匹配到的文件数组。
 
-这个文件的主要作用就是批量加载匹配的 .stories.js 文件。
+- [webpack require.context](https://webpack.js.org/guides/dependency-management/#requirecontext)
+
+```js
+require.context(
+  directory,
+  (useSubdirectories = true),
+  (regExp = /^\.\/.*$/),
+  (mode = 'sync')
+)
+```
+
+另外一个示例：
+
+```js
+const translations = {
+  en: require('./translations/en.yaml'),
+  zh_CN: require('./translations/zh_CN.yaml')
+}
+// 等于
+const translations = require.context('./translations/', false, /\.yaml$/)
+// ==，有待验证是否等价
+```
 
 配置就这些，还是很简单的。
 

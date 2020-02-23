@@ -66,9 +66,9 @@ dva 和 Ant Design 是没有关系的，Ant Design 就是一套单独的 UI 组�
 
 Ant Desgin Pro = dva + Ant Desgin
 
-- [Ant Design Pro 总结篇](http://blog.poetries.top/2018/09/16/ant-design-pro/)
+关于权限，控制左侧导航栏对哪些用户可见，需要在登录之后调用 setAuthority() 设置用户的类型，然后再调用 reloadAuthorized() 将用户的类型更新到内存中。
 
-关于权限，控制左侧导航栏对哪些用户可见，需要在登录之后调用 setAuthority() 设置用户的类型，而且要调用 reloadAuthorized() 将用户的类型更新到内存中。
+- [Ant Design Pro 总结篇](http://blog.poetries.top/2018/09/16/ant-design-pro/)
 
 ### Miscs
 
