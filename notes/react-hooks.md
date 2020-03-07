@@ -90,13 +90,29 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b])
 
 ### useRef
 
-useRef() a mutable ref object, component 的整个生命周期可随意改变和访问，但对它的修改不会引起 re-render
+useRef() 是一个可变的引用对象，组件的整个生命周期可随意改变和访问，但对它的修改不会引起 re-render。
 
-Essentially, useRef is like a "box" that can hold a mutable value in its .current property.
+基本上，useRef 像一个盒子，保存了一个可变的值在它的 `.currenty` 属性上，修改 `.current` 属性的值不会引起 re-render。相当于之前 class 中的实例成员。
 
-> Keep in mind that useRef doesn’t notify you when its content changes. Mutating the .current property doesn’t cause a re-render. If you want to run some code when React attaches or detaches a ref to a DOM node, you may want to use a callback ref instead.
+如果想手动操作一个 DOM 节点，首先要获取它的引用，直接通过 ref 属性给它传递一个 useRef() 值，比如：
 
-相当于之前 class 中的实例成员。
+```ts
+function TextInputWithFocusButton() {
+  const inputEl = useRef(null)
+  const onButtonClick = () => {
+    // `current` points to the mounted text input element
+    inputEl.current.focus()
+  }
+  return (
+    <>
+      <input ref={inputEl} type="text" />
+      <button onClick={onButtonClick}>Focus the input</button>
+    </>
+  )
+}
+```
+
+`<input ref={inputEl} />` 相当于把 input 这个 DOM node 绑定到了 inputEl.current 上。
 
 ### useImperativeHandle
 
@@ -137,7 +153,7 @@ export default function PreviousValue() {
 }
 ```
 
-一步一步来理解，首先执行 `const [count, setCount] = useState(0)`，此时 count 为初始值 0，接着执行 `const prevCount = usePrevious(0)`，因为 `useEffect(()=>{ref.current=value})` 在 render 之后执行，所以此时 ref.current 为初始值 undefined。初次 render 时，显示 `Now: 0, Previouse:`。
+一步一步来理解，首先执行 `const [count, setCount] = useState(0)`，此时 count 为初始值 0，接着执行 `const prevCount = usePrevious(0)`，因为 `useEffect(()=>{ref.current=value})` 在 render 之后执行，所以此时 ref.current 为初始值 undefined。初次 render 时，显示 `Now: 0, Previous:`。
 
 render 执行完后会执行 useEffect 中定义的 `()=>{ref.current=value}`，所以此时 ref.current 变为 0。注意 ref 的变化不会引起 re-render。
 
@@ -193,4 +209,63 @@ export const ThemeContext = React.createContext({
   theme: themes.dark,
   toggleTheme: () => {}
 })
+```
+
+### useInterval
+
+- [使用 React Hooks 声明 setInterval](https://overreacted.io/zh-hans/making-setinterval-declarative-with-react-hooks/)
+
+结合了 useRef 和 useEffect 的使用示例。
+
+实现：
+
+```ts
+// https://overreacted.io/zh-hans/making-setinterval-declarative-with-react-hooks/
+function useInterval(callback: () => void, delay: null | number) {
+  const savedCallback = useRef<() => void>(callback)
+
+  // save new callback
+  useEffect(() => {
+    savedCallback.current = callback
+  })
+
+  // set interval
+  useEffect(() => {
+    function tick() {
+      savedCallback.current()
+    }
+    if (delay !== null) {
+      tick() // 我额外加的
+      let id = setInterval(tick, delay)
+      return () => clearInterval(id)
+    }
+  }, [delay])
+}
+```
+
+根据上面的实现，如果想要消除 interval，只需要把 delay 设置为 null。所以，一个使用示例：
+
+```ts
+const [report, setReport] = useState<Report | undefined>(undefined)
+const [stopInterval, setStopInterval] = useState(false)
+
+// 轮循获取进度
+useInterval(
+  () => {
+    async function fetchData() {
+      try {
+        const res = await fetchReport(id)
+        setReport(res)
+        if (res.progress >= 100) {
+          // 进度到达 100% 后停止轮循
+          setStopInterval(true)
+        }
+      } catch (error) {
+        message.error(error.message)
+      }
+    }
+    fetchData()
+  },
+  stopInterval ? null : 2000
+)
 ```
