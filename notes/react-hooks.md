@@ -72,8 +72,6 @@ useReducer 在移除 useEffect 中的依赖时很有帮助，可以看这篇文�
 const memoizedCallback = useCallback(() => {
   doSomething(a, b)
 }, [a, b])
-// 使用
-// memoizedCallback(a, b)
 ```
 
 // TODO: 增加例子
@@ -86,7 +84,9 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b])
 
 // TODO: 增加例子
 
-现在明白了，useCallback() 是用来缓存方法，useMemo() 是用来缓存变量，这样在每次 render() 时不会生成新的方法或值，提高性能。
+现在明白了，useCallback() 是用来缓存方法，useMemo() 是用来缓存变量，这样在每次 render() 时不会生成新的方法或值 (也取决于它们的依赖有没有变化)，如果有 useEffect 依赖这些方法或状态，则可以减少 render 的次数，提升性能。
+
+- [【译】什么时候使用 useMemo 和 useCallback](https://jancat.github.io/post/2019/translation-usememo-and-usecallback/)
 
 ### useRef
 
@@ -114,9 +114,32 @@ function TextInputWithFocusButton() {
 
 `<input ref={inputEl} />` 相当于把 input 这个 DOM node 绑定到了 inputEl.current 上。
 
+React 中还有另外一个相似的 API: createRef()，这个 API 只能用于 class component，而 useRef() 只能用于 function component。
+
+- [精读《useRef 与 createRef 的区别》](https://github.com/dt-fe/weekly/blob/v2/141.%E7%B2%BE%E8%AF%BB%E3%80%8AuseRef%20%E4%B8%8E%20createRef%20%E7%9A%84%E5%8C%BA%E5%88%AB%E3%80%8B.md)
+
 ### useImperativeHandle
 
 useImperativeHandle (命令式，而非声明式的 handle)，和 useRef/forwardRef 配套使用，用于转发 ref handle。
+
+使用场景：父组件需要调用子组件的方法，比如子组件中有 input，在父组件中需要 clear 或 focus 这个 input，这时就可以用上 useImperativeHandle。
+
+官网文档里的例子：
+
+```js
+function FancyInput(props, ref) {
+  const inputRef = useRef();
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current.focus();
+    }
+  }));
+  return <input ref={inputRef} ... />;
+}
+FancyInput = forwardRef(FancyInput);
+```
+
+useImperativeHandle 中定义的方法可以被父组件调用。
 
 ### useLayoutEffect
 
@@ -269,3 +292,9 @@ useInterval(
   stopInterval ? null : 2000
 )
 ```
+
+Update:
+
+如果一个组件内的 interval 是依赖于 state，那么需要这样做，因为不这样做，仅用常规的 useEffect()，每次 interval 都会修改 state，触发 re-render，从而引发 clear interval 和重新 set invterval，这并不是我们预期的行为，我们预期的是如果间隔时间固定，那么 interval 应该一直工作，直到 unmount 才会被 clear 掉。
+
+如果只是依赖于 props，那么只需要按常规的做法，使用 useEffect() 就足够了。

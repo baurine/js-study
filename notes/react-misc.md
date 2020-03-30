@@ -1,6 +1,7 @@
 # React Misc
 
 - React in Patterns (React 模式) 一书笔记
+- i18n
 
 ## React in Patterns (React 模式) 一书笔记
 
@@ -368,3 +369,46 @@ function StatisCard({ detail }: { detail: StatementDetailInfo }) {
 }
 ```
 
+## Suspense & React.lazy
+
+- [精读《Suspense 改变开发方式》](https://github.com/dt-fe/weekly/blob/v2/143.%E7%B2%BE%E8%AF%BB%E3%80%8ASuspense%20%E6%94%B9%E5%8F%98%E5%BC%80%E5%8F%91%E6%96%B9%E5%BC%8F%E3%80%8B.md)
+- [Suspense for Data Fetching (Experimental)](https://zh-hans.reactjs.org/docs/concurrent-mode-suspense.html)
+- [深度理解 React Suspense](https://juejin.im/post/5c7d4a785188251b921f4e26)
+
+TODO
+
+> 在原文写作的时候，Suspense 仅能对 React.lazy 生效，但现在已经可以对任何异步状态生效了，只要符合 Pending 中 throw promise 的规则。
+
+```js
+const ProfilePage = React.lazy(() => import('./ProfilePage')) // Lazy-loaded
+
+// Show a spinner while the profile is loading
+<Suspense fallback={<Spinner />}>
+  <ProfilePage />
+</Suspense>
+```
+
+所以现在 Suspense 已经不再依赖 React.lazy，可以独立工作了。
+
+> 之所以说 Suspense 开发方式改变了开发规则，是因为它做到了将异步的状态管理与 UI 组件分离，所有 UI 组件都无需关心 Pending 状态，而是当作同步去执行，这本身就是一个巨大的改变。
+
+> 另外由于状态的分离，我们可以利用纯 UI 组件拼装任意粒度的 Pending 行为，以整个 App 作为一个大的 Suspense 作为兜底，这样 UI 彻底与异步解耦，哪里 Loading，什么范围内 Loading，完全由 Suspense 组合方式决定，这样的代码显然具备了更强的可拓展性。
+
+## 代码分割
+
+- [代码分割](https://zh-hans.reactjs.org/docs/code-splitting.html)
+
+TODO
+
+动态 import，React.lazy(), react-loadable
+
+React.lazy() 加载的 component 必须放在 `<Suspense/>` 中。
+
+## SWR - Hooks 取数据
+
+- [精读《Hooks 取数 - swr 源码》](https://github.com/dt-fe/weekly/blob/v2/128.%E7%B2%BE%E8%AF%BB%E3%80%8AHooks%20%E5%8F%96%E6%95%B0%20-%20swr%20%E6%BA%90%E7%A0%81%E3%80%8B.md)
+- [zeit/swr](https://github.com/zeit/swr)
+
+## create-react-app / react-app-rewrite / customize-cra 配置
+
+TODO，完整地看一下 create-react-app 的文档。
