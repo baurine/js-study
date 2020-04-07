@@ -293,9 +293,9 @@ function MyComponent(...) {
       )}
       ...
     >
-      <WaringText>
+      <WarningText>
         <FormattedMessage id="binlog_modify_warning" />
-      </WaringText>
+      </WarningText>
       ...
     </Modal>
   )
@@ -334,8 +334,8 @@ function init() {
       defaultNS: 'defNS',
       fallbackLng: 'en',
       interpolation: {
-        escapeValue: false
-      }
+        escapeValue: false,
+      },
     })
 }
 
@@ -409,6 +409,232 @@ React.lazy() 加载的 component 必须放在 `<Suspense/>` 中。
 - [精读《Hooks 取数 - swr 源码》](https://github.com/dt-fe/weekly/blob/v2/128.%E7%B2%BE%E8%AF%BB%E3%80%8AHooks%20%E5%8F%96%E6%95%B0%20-%20swr%20%E6%BA%90%E7%A0%81%E3%80%8B.md)
 - [zeit/swr](https://github.com/zeit/swr)
 
-## create-react-app / react-app-rewrite / customize-cra 配置
+## create-react-app / react-app-rewired / customize-cra 配置
 
-TODO，完整地看一下 create-react-app 的文档。
+### create-react-app
+
+- [CAR DEV](https://create-react-app.dev/)
+
+创建应用：`npx create-react-app my-app --template typescript`。
+
+可以单独升级 react-scripts。
+
+自动格式化代码：`yarn add husky lint-staged prettier -D`。husky 是用来允许使用 githooks，lint-staged 允许我们只对 staged 文件执行 scripts，prettier 是用来格式化。然后在 package.json 中添加以下内容：
+
+```json
+"husky": {
+  "hooks": {
+    "pre-commit": "lint-staged"
+  }
+},
+"lint-staged": {
+  "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}": [
+    "prettier --write"
+  ]
+},
+```
+
+添加 storybook: `npx -p @storybook/cli sb init`。
+
+处理 assets：暂略。
+
+剩余，待看。
+
+### react-app-rewired
+
+- [react-app-rewired](https://github.com/timarney/react-app-rewired)
+
+因为 create-react-app 将 webpack 的配置隐藏起来了，你没办法直接修改这个 webpack config，除非执行 `yarn run eject` 将原始的 webpack config 暴露出来，但这样就没办法再用 react-scripts 的其它命令了。
+
+react-app-rewired 提供了一种新的选择，可以在 config-overrides.js 这个文件中修改 webpack config。
+
+```js
+/* config-overrides.js */
+module.exports = function override(config, env) {
+  // 参数中的 config 就是 webpack config
+  // console.log(config)
+  // 可以对 config 进行任意修改 (但不见得一定会生效)
+  // 比如：
+
+  // to speed up rebuild time
+  // config.mode = 'development'
+  // config.devtool = 'eval-cheap-module-source-map'
+  // delete config.optimization
+
+  // fix publicPath and output path
+  // config.output.publicPath = pkg.homepage
+  // config.output.path = paths.appBuild // else it will put the outputs in the dist folder
+
+  return config
+}
+```
+
+上面这种写法只能修改 webpack config，如果还要修改 webpackDevServer 或 jest 的配置，则要换另一种写法：
+
+```js
+module.exports = {
+  // The Webpack config to use when compiling your react app for development or production.
+  webpack: function (config, env) {
+    // ...add your webpack config
+    return config
+  },
+  // The Jest config to use when running your jest tests - note that the normal rewires do not
+  // work here.
+  jest: function (config) {
+    // ...add your jest config customisation...
+    // Example: enable/disable some tests based on environment variables in the .env file.
+    if (!config.testPathIgnorePatterns) {
+      config.testPathIgnorePatterns = []
+    }
+    if (!process.env.RUN_COMPONENT_TESTS) {
+      config.testPathIgnorePatterns.push(
+        '<rootDir>/src/components/**/*.test.js'
+      )
+    }
+    if (!process.env.RUN_REDUCER_TESTS) {
+      config.testPathIgnorePatterns.push('<rootDir>/src/reducers/**/*.test.js')
+    }
+    return config
+  },
+  // The function to use to create a webpack dev server configuration when running the development
+  // server with 'npm run start' or 'yarn start'.
+  // Example: set the dev server to use a specific certificate in https.
+  devServer: function (configFunction) {
+    // Return the replacement function for create-react-app to use to generate the Webpack
+    // Development Server config. "configFunction" is the function that would normally have
+    // been used to generate the Webpack Development server config - you can use it to create
+    // a starting configuration to then modify instead of having to create a config from scratch.
+    return function (proxy, allowedHost) {
+      // Create the default config by calling configFunction with the proxy/allowedHost parameters
+      const config = configFunction(proxy, allowedHost)
+
+      // Change the https certificate options to match your certificate, using the .env file to
+      // set the file paths & passphrase.
+      const fs = require('fs')
+      config.https = {
+        key: fs.readFileSync(process.env.REACT_HTTPS_KEY, 'utf8'),
+        cert: fs.readFileSync(process.env.REACT_HTTPS_CERT, 'utf8'),
+        ca: fs.readFileSync(process.env.REACT_HTTPS_CA, 'utf8'),
+        passphrase: process.env.REACT_HTTPS_PASS,
+      }
+
+      // Return your customised Webpack Development Server config.
+      return config
+    }
+  },
+  // The paths config to use when compiling your react app for development or production.
+  paths: function (paths, env) {
+    // ...add your paths config
+    return paths
+  },
+}
+```
+
+### customized-cra
+
+- [customized-cra](https://github.com/arackaf/customize-cra)
+
+react-app-rewired 原生写法，将对 webpack config 的修改全部写在 `function override(config, env) {...}` 一个方法中，不够模块化，customized-cra 则将它变得更模块化，它提供了一些 helper 方法，可以将每一个独立的修改放到单独的函数中，再串行执行这些函数。
+
+示例：
+
+```js
+const {
+  override,
+  addDecoratorsLegacy,
+  disableEsLint,
+  addBundleVisualizer,
+  addWebpackAlias,
+  adjustWorkbox,
+} = require('customize-cra')
+const path = require('path')
+
+module.exports = override(
+  // enable legacy decorators babel plugin
+  addDecoratorsLegacy(),
+
+  // disable eslint in webpack
+  disableEsLint(),
+
+  // add webpack bundle visualizer if BUNDLE_VISUALIZE flag is enabled
+  process.env.BUNDLE_VISUALIZE == 1 && addBundleVisualizer(),
+
+  // add an alias for "ag-grid-react" imports
+  addWebpackAlias({
+    ['ag-grid-react$']: path.resolve(__dirname, 'src/shared/agGridWrapper.js'),
+  }),
+
+  // adjust the underlying workbox
+  adjustWorkbox((wb) =>
+    Object.assign(wb, {
+      skipWaiting: true,
+      exclude: (wb.exclude || []).concat('index.html'),
+    })
+  )
+)
+```
+
+新的 override() 方法，它接受可变数量个参数，每个参数的签名都是 `function (config) {...}`。
+
+比如 addWebpackAlias 方法的原型：
+
+```js
+export const addWebpackAlias = (alias) => (config) => {
+  if (!config.resolve) {
+    config.resolve = {}
+  }
+  if (!config.resolve.alias) {
+    config.resolve.alias = {}
+  }
+  Object.assign(config.resolve.alias, alias)
+  return config
+}
+```
+
+我们可以自定义一个 log 函数放到 override() 中，观察最终 webpack config 会长成啥样：
+
+```js
+const logConfig = () => (config) => {
+  console.log(config)
+}
+
+module.exports = override(
+  ...,
+  logConfig()
+)
+```
+
+当然，由于 logConfig 方法不带参数，上面的代码也可以简化成：
+
+```js
+const logConfig = (config) => {
+  console.log(config)
+}
+
+module.exports = override(
+  ...,
+  logConfig
+)
+```
+
+如果同时还要修改 webpackDevServer 的 config，则 config-overrides.js 要这样写：
+
+```js
+const {
+  override,
+  disableEsLint,
+  overrideDevServer,
+  watchAll,
+} = require('customize-cra')
+
+module.exports = {
+  webpack: override(
+    // usual webpack plugin
+    disableEsLint()
+  ),
+  devServer: overrideDevServer(
+    // dev server plugin
+    watchAll()
+  ),
+}
+```
