@@ -184,6 +184,14 @@ TypeScript 和 React、Webpack 的配合使用。和一般 React & Webpack 项�
     const weeks: WeeksArr = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
     const weeks2: WeeksArr = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun', 'hehe'] //wrong
 
+表示这个类型包含任意字段：
+
+```ts
+interface MyType {
+  [k: string]: any
+}
+```
+
 ## Note for Others
 
 TypeScript 是 JavaScript 的超集，普通的 .js 改成 .ts 就能直接运行了。没有显式声明类型且没有赋值的变量，默认是 any 类型，如果声明时赋值了，则根据字面量自动推导出它的类型。
@@ -192,7 +200,7 @@ TypeScript 的编译命令是 tsc，编译的配置文件是 tsconfig.json，用
 
 Webpack 可以用 ts-loader 来处理 .ts 和 .tsx 文件。
 
-**type & interface**
+### type & interface
 
 type 关键字也可以像 interface 那样来定义一般的自定义类型，但其实它和 interface 的不完全相同，type 更侧重为类型定义别名 (type alias)。
 
@@ -206,9 +214,9 @@ type 关键字也可以像 interface 那样来定义一般的自定义类型，�
 
 为 React 的 component 定义 Props 和 State 时，推荐使用 type，而不是 interface (呃...我用了 interface)
 
-**声明文件**
+### 声明文件
 
-使用第三方库时，需要引用它的声明文件。比如在 TypeScript 中使用 jQuery: `$('#foo')` 或 `jQuery('#foo')`，但 TypeScript 并不知道 $ 或 jQuery 是什么东西，这时需要用 declare 关键字来显式的声明 (类似 C 中的头文件)。
+使用第三方库时，需要引用它的声明文件。比如在 TypeScript 中使用 jQuery: `$('#foo')` 或 `jQuery('#foo')`，但 TypeScript 并不知道 \$ 或 jQuery 是什么东西，这时需要用 declare 关键字来显式的声明 (类似 C 中的头文件)。
 
     declare var jQuery: (string) => any;
 
@@ -224,3 +232,71 @@ type 关键字也可以像 interface 那样来定义一般的自定义类型，�
 常用的第三方库的声明文件都有人帮我们写好了，TypeScript 推荐使用 @types 来管理类型声明文件，比如：
 
     npm install @types/jquery --save-dev
+
+### tsconfig.json
+
+tsc 的配置文件，执行 tsc 进行编译时，编译器会从当前目录开始去查找 tsconfig.json 文件，逐级向上搜索父目录。
+
+- [tsconfig.json](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html)
+- [Compiler Options](https://www.typescriptlang.org/docs/handbook/compiler-options.html)
+- [tsconfig v2](https://www.typescriptlang.org/v2/en/tsconfig)
+
+tsconfig.json 中主要包含的字段：compileOptions，files, include, exclude, extends。
+
+其中 files/include/exclude 都是用来声明编译时要包含和排除哪些文件。include 和 exclude 可以用通配符。
+
+extend 用来指定从另一个配置中继承其配置。
+
+最重要的是 compileOptions。一个示例：
+
+```json
+// tsconfig.paths.json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }
+}
+
+// tsconfig.json
+{
+  "extends": "./tsconfig.paths.json",
+  "compilerOptions": {
+    "target": "es6",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "jsx": "react"
+  },
+  "include": [
+    "src"
+  ]
+}
+```
+
+- target: 指定生成的目标版本，默认值 "ES3"，可选值 "ES5", "ES6" / "ES2015", "ES2016", "ES2017", "ESNext"... 比如你设置成 ES6，那 Promise 和箭头函数就不会转译，直接保留，但如果选 ES5，那么 Promise 和箭头函数就会转译成 ES5 的实现，"ESNext" 则表示最新的 ES 版本。
+- module: 指定生成哪个模块系统，可选值："None", "CommonJS", "AMD", "System", "UMD", "ES6" / "ES2015", ESNext... 默认值，如果 target 小于 ES6 则为 CommonJS，否则为 ES6。ESNext 和 ES6 目前输出差不多。
+- moduleResolution: 已经 deprecated 了，两个值，"node" 和 "classic"。
+- lib: ts 默认为 js 内置的 API (如 Math) 以及浏览器环境 (比如 document) 包含了一系列的类型定义。同时，取决于 target，不同的 target 会包含不同的 ts 的类型定义，比如如果 target 为 ES6，那么你就可以在代码中使用 Map 类型，因为 ts 为 es6 的 target 包含了 Map 的定义，如果 target 是 es5，就不能在代码中使用 Map，会编译报错。(babel 也处理不了 Map 类型，无法转换成 es5 代码)。如果 target 是 es5，默认包含的 lib 为 DOM, ES5, ScriptHost，如果 target 为 ES6，则默认包含的 lib 为 DOM, ES6, DOM.Iterable, ScriptHost。
+- esModuleInterop: 使用 CommonJS 写法的代码，在 module.exports 时如果没有一个 default object，则为它自动生成一个 default object。(一句话不好理解，看 ts v2 官方文档吧，有示例)
+- resolveJsonModule: 允许 ts import json 文件，默认是不能处理 json 文件的。
+- isolatedModules: 如果为 true 的话，每一个文件至少都要有 export，否则这个文件没有存在必要。
+- jsx: "react"
