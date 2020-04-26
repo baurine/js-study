@@ -638,3 +638,73 @@ module.exports = {
   ),
 }
 ```
+
+## React 中组件间保存 context 的几种方法总结
+
+场景：两个页面，第一个页面是一个搜索页面，输入相关搜索选项 (比如时间区间，搜索关键字，结果的类型诸如此类...) 后，得到结果，结果是一个 list，点击 list 中的 item 后跳转到 item 的详情页，从详情页返回搜索页后，搜索页要保持上次的搜索选项。
+
+可行的方法：
+
+1. 全局 store (redux/dva)
+1. React Context
+1. Local Storage
+1. Session Storage
+1. 把搜索选项放到 url 中
+
+后 4 种都是没有使用全局 store 时的方案。
+
+五种方法都尝试过。试下来，除了 store 的方案，后 4 种中 Session Storage，配合 @umijs/hooks 的 useSessionStorageState hook 应该是最简洁方便。
+
+React Context 算是最优雅的一种，但代码会比较多，且面临在子组件中更新 context 的问题，容易引发死循环问题。
+
+Local Storage 的问题是如何处理过期失效，一种折中办法是，在从详情页中返回搜索页时，在 url 中加上额外的参数，比如：
+
+```js
+<Link to="/list?from=detail">返回列表</Link>
+```
+
+这样，在列表页加载时，检测参数中是否包含 `from=detail`，包含的话就使用 local storage 中的值，否则不使用。
+
+(window.history 出于安全考虑，不允许获取上一个 url)。
+
+把搜索选项放到 url 中，如果搜索选项很少的话，也是一种不错的方法，但如果搜索选项很多，就会产生很丑的 url。示例代码：
+
+```js
+useEffect(() => {
+  async function getSlowQueryList() {
+    setLoading(true)
+    const res = await client
+      .getInstance()
+      .slowQueryListGet(
+        curSchemas,
+        desc,
+        limit,
+        curTimeRange?.end_time,
+        curTimeRange?.begin_time,
+        orderBy,
+        searchText
+      )
+    setLoading(false)
+    setSlowQueryList(res.data || [])
+  }
+  getSlowQueryList()
+  const qs = List.buildQuery({
+    curTimeRange,
+    curSchemas,
+    orderBy,
+    desc,
+    searchText,
+    limit,
+  })
+  navigate(`/slow_query?${qs}`)
+}, [
+  curTimeRange,
+  curSchemas,
+  orderBy,
+  desc,
+  searchText,
+  limit,
+  refreshTimes,
+  navigate,
+])
+```
