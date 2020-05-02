@@ -230,7 +230,7 @@ function Example({ someProp }) {
 ```js
 export const ThemeContext = React.createContext({
   theme: themes.dark,
-  toggleTheme: () => {}
+  toggleTheme: () => {},
 })
 ```
 
@@ -298,3 +298,146 @@ Update:
 如果一个组件内的 interval 是依赖于 state，那么需要这样做，因为不这样做，仅用常规的 useEffect()，每次 interval 都会修改 state，触发 re-render，从而引发 clear interval 和重新 set invterval，这并不是我们预期的行为，我们预期的是如果间隔时间固定，那么 interval 应该一直工作，直到 unmount 才会被 clear 掉。
 
 如果只是依赖于 props，那么只需要按常规的做法，使用 useEffect() 就足够了。
+
+### 使用自定义的 hook 抽取复杂查询
+
+示例 (代码来自开源的 tidb-dashboard)：
+
+```js
+import { useState, useEffect, useMemo } from 'react'
+import { useSessionStorageState } from '@umijs/hooks'
+import client, { StatementTimeRange, StatementModel } from '@lib/client'
+import {
+  TimeRange,
+  DEF_TIME_RANGE,
+  calcValidStatementTimeRange,
+} from '../pages/List/TimeRangeSelector'
+
+const QUERY_OPTIONS = 'statement.query_options'
+
+export interface IStatementQueryOptions {
+  timeRange: TimeRange
+  schemas: string[]
+  stmtTypes: string[]
+  orderBy: string
+  desc: boolean
+}
+
+export const DEF_STMT_QUERY_OPTIONS: IStatementQueryOptions = {
+  timeRange: DEF_TIME_RANGE,
+  schemas: [],
+  stmtTypes: [],
+  orderBy: 'sum_latency',
+  desc: true,
+}
+
+export default function useStatement(
+  options?: IStatementQueryOptions,
+  needSave: boolean = true
+) {
+  const [queryOptions, setQueryOptions] = useState(
+    options || DEF_STMT_QUERY_OPTIONS
+  )
+  const [savedQueryOptions, setSavedQueryOptions] = useSessionStorageState(
+    QUERY_OPTIONS,
+    options || DEF_STMT_QUERY_OPTIONS
+  )
+
+  const [enable, setEnable] = useState(true)
+  const [allTimeRanges, setAllTimeRanges] = useState<StatementTimeRange[]>([])
+  const [allSchemas, setAllSchemas] = useState<string[]>([])
+  const [allStmtTypes, setAllStmtTypes] = useState<string[]>([])
+
+  const validTimeRange = useMemo(
+    () => calcValidStatementTimeRange(queryOptions.timeRange, allTimeRanges),
+    [queryOptions.timeRange, allTimeRanges]
+  )
+
+  const [loadingStatements, setLoadingStatements] = useState(true)
+  const [statements, setStatements] = useState<StatementModel[]>([])
+
+  const [refreshTimes, setRefreshTimes] = useState(0)
+
+  function refresh() {
+    setRefreshTimes((prev) => prev + 1)
+  }
+
+  useEffect(() => {
+    async function queryStatementStatus() {
+      const res = await client.getInstance().statementsConfigGet()
+      setEnable(res?.data.enable!)
+    }
+
+    async function querySchemas() {
+      const res = await client.getInstance().statementsSchemasGet()
+      setAllSchemas(res?.data || [])
+    }
+
+    async function queryTimeRanges() {
+      const res = await client.getInstance().statementsTimeRangesGet()
+      setAllTimeRanges(res?.data || [])
+    }
+
+    async function queryStmtTypes() {
+      const res = await client.getInstance().statementsStmtTypesGet()
+      setAllStmtTypes(res?.data || [])
+    }
+
+    queryStatementStatus()
+    querySchemas()
+    queryTimeRanges()
+    queryStmtTypes()
+  }, [refreshTimes])
+
+  useEffect(() => {
+    async function queryStatementList() {
+      if (allTimeRanges.length === 0) {
+        setStatements([])
+        return
+      }
+      let curOptions = needSave ? savedQueryOptions : queryOptions
+      setLoadingStatements(true)
+      const res = await client
+        .getInstance()
+        .statementsOverviewsGet(
+          validTimeRange.begin_time!,
+          validTimeRange.end_time!,
+          curOptions.schemas,
+          curOptions.stmtTypes
+        )
+      setLoadingStatements(false)
+      setStatements(res?.data || [])
+    }
+
+    queryStatementList()
+  }, [
+    needSave,
+    queryOptions,
+    savedQueryOptions,
+    allTimeRanges,
+    validTimeRange,
+    refreshTimes,
+  ])
+
+  return {
+    queryOptions,
+    setQueryOptions,
+    savedQueryOptions,
+    setSavedQueryOptions,
+    enable,
+    allTimeRanges,
+    allSchemas,
+    allStmtTypes,
+    validTimeRange,
+    loadingStatements,
+    statements,
+    refresh,
+  }
+}
+```
+
+要对外暴露刷新接口和修改选项的接口。
+
+### @umijs/hooks | react-use | useSWR()
+
+TODO
