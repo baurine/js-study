@@ -236,3 +236,236 @@ ajax(`https://api.example.com?search=${query}`).then(handleResponse)
 所以如果你写一个库，如果这个库你只准备用于后端，那可以只编译成 CJS 或 UMD，如果只准备用于前端，则可以只编译成 AMD / ESM / UMD。如果前后端都可以用，则可以全部编译。
 
 在使用端，如果你用 `requier(...)` 的语法去导入模块，则会去找模块的 CJS 版本，如果用 `import ... from ...` 的语法去导入模块，则会去找模块的 ESM 版本。
+
+## CommonJS vs ESM
+
+### CommonJS
+
+- [CommonJS 规范](https://javascript.ruanyifeng.com/nodejs/module.html)
+- [require() 源码解读](http://www.ruanyifeng.com/blog/2015/05/require.html)
+
+CommonJS 不支持 TreeShaking，require() 时全部导入，且是同步加载，所以只适合后端。
+
+> CommonJS 规范规定，每个模块内部，module 变量代表当前模块。这个变量是一个对象，它的 exports 属性（即 module.exports）是对外的接口。加载某个模块，其实是加载该模块的 module.exports 属性。
+
+```js
+var x = 5
+var addX = function (value) {
+  return value + x
+}
+module.exports.x = x
+module.exports.addX = addX
+```
+
+使用 require 加载：
+
+```js
+var example = require('./example.js')
+
+console.log(example.x) // 5
+console.log(example.addX(1)) // 6
+```
+
+module 对象：Node 内部提供一个 Module 构建函数。所有模块都是 Module 的实例。
+
+```js
+function Module(id, parent) {
+  this.id = id
+  this.exports = {}
+  this.parent = parent
+  // ...
+}
+```
+
+每个模块内部，都有一个 module 对象，代表当前模块。它有以下属性。
+
+- module.id 模块的识别符，通常是带有绝对路径的模块文件名。
+- module.filename 模块的文件名，带有绝对路径。
+- module.loaded 返回一个布尔值，表示模块是否已经完成加载。
+- module.parent 返回一个对象，表示调用该模块的模块。
+- module.children 返回一个数组，表示该模块要用到的其他模块。
+- module.exports 表示模块对外输出的值。
+
+exports 变量：为了方便，Node 为每个模块提供一个 exports 变量，指向 module.exports。这等同在每个模块头部，有一行这样的命令。
+
+```js
+var exports = module.exports
+```
+
+造成的结果是，在对外输出模块接口时，可以向 exports 对象添加方法。
+
+```js
+exports.area = function (r) {
+  return Math.PI * r * r
+}
+
+exports.circumference = function (r) {
+  return 2 * Math.PI * r
+}
+```
+
+> 不能直接将 exports 变量指向一个值，因为这样等于切断了 exports 与 module.exports 的联系。
+
+> 如果你觉得，exports 与 module.exports 之间的区别很难分清，一个简单的处理方法，就是放弃使用 exports，只使用 module.exports。
+
+require：读入并执行一个 JavaScript 文件，然后返回该模块的 exports 对象。
+
+如果想得到 require 命令加载的确切文件名，使用 require.resolve(fileName)方法。
+
+目录加载规则：如果此目录有 package.json 且有 main 字段，则从 main 字段指定的文件加载，否则从该目录下的 index.js 加载。
+
+删除缓存：`delete require.cache[moduleName]`
+
+CommonJS 模块的加载机制是，输入的是被输出的值的拷贝。也就是说，一旦输出一个值，模块内部的变化就影响不到这个值。
+
+所以，CommonJS 中一个模块导出一个变量是没有意义的，一般是导出常量或方法。
+
+(相比之下，ESM 导出的变量是引用，一处修改，全局改变。)
+
+require 的内部处理流程。它其实不是一个全局命令，而是指向当前模块的 module.require 命令，后者又调用了 Node 的内部命令 `Module._load`。
+
+```js
+Module._load = function (request, parent, isMain) {
+  // 1. 检查 Module._cache，是否缓存之中有指定模块
+  // 2. 如果缓存之中没有，就创建一个新的Module实例
+  // 3. 将它保存到缓存
+  // 4. 使用 module.load() 加载指定的模块文件，
+  //    读取文件内容之后，使用 module.compile() 执行文件代码
+  // 5. 如果加载/解析过程报错，就从缓存删除该模块
+  // 6. 返回该模块的 module.exports
+}
+
+Module.prototype._compile = function (content, filename) {
+  // 1. 生成一个require函数，指向module.require
+  // 2. 加载其他辅助方法到require
+  // 3. 将文件内容放到一个函数之中，该函数可调用 require
+  // 4. 执行该函数
+}
+```
+
+一旦 require 函数准备完毕，整个所要加载的脚本内容，就被放到一个新的函数之中，这样可以避免污染全局环境。
+
+```js
+;(function (exports, require, module, __filename, __dirname) {
+  // YOUR CODE INJECTED HERE!
+})
+```
+
+(咦，所以 CommonJS 实际也是 bundle 了，只不过 bundle 在内存中，没有落盘而已...)
+
+require.resolve() 可以用来简化 `path.join(__dirname, xxx)`，示例：
+
+```js
+fs.readFileSync(path.join(__dirname, './assets/some-file.txt'))
+fs.readFileSync(require.resolve('./assets/some-file.txt'))
+```
+
+还看到个 require.context()，这个又是干哈的...这个跟 CommonJS 的 module 没关系，这个是 webpack 加的方法。
+
+- [webpack 中 require.context 的作用](https://zhuanlan.zhihu.com/p/59564277)
+- [webpack 中 require.context 的使用](https://segmentfault.com/a/1190000017160862)
+
+用来辅助实现批量 import。
+
+### ESM
+
+相比 CommonJS 只有 module.exports 和 require() 固定的用法，ESM 的 export/import 就灵活的有点过了...
+
+示例：
+
+```js
+export default function xxx() {}
+export default const A_CONST = 'xxx'
+export function xxx() {}
+export const A_CONST = 'xxx'
+
+function xxx() {}
+export {xxx}
+export {xxx as yyy}
+
+export * from './Toolbar' // 这种 export 无法导出 './Toolbar' 中的 default，对吧
+export { default as Toolbar } from './Toolbar' // 需要还需要这行辅助一下
+
+import React from 'react'
+import * as React from 'react' // 这个怎么理解？
+import {useEffect} from 'react'
+import {xxx as yyy} from './x.js'
+// ...
+```
+
+头大。
+
+- [JavaScript modules 模块](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide/Modules)
+
+导出时，只能导出一个 default export，但可以导出多个 named exports。
+
+default export 可以匿名，import 时可以取任意名字。示例：
+
+```js
+// square.js
+export default function(ctx) {
+  ...
+}
+
+// main.js
+import randomSquare from './modules/square.js';
+// 相当于
+import {default as randomSquare} from './modules/square.js'
+// 所以 default 相当于一个默认的 named export? 懂了
+```
+
+但 named exports 是具名的，import 时名字必须和 export 时相同，但可以用 as 在 export 或 import 时重命名。
+
+创建模块对象：
+
+```js
+import * as Module from '/modules/module.js'
+```
+
+这将获取 module.js 中所有可用的导出，并使它们可以作为对象模块的成员使用，从而有效地为其提供自己的命名空间。
+
+(包括 default 导出吗？如果包括的话，那么是通过 Module.default 来访问？试验一下。)
+
+经验证，确实如此，Module 对象中会有 default 属性，它的值就是 module.js 中的 default export。
+
+```js
+// module.js
+export default function foo() {
+  console.log('foo')
+}
+
+export function bar() {
+  console.log('bar')
+}
+
+export const hello = 'hello'
+
+// main.js
+import * as Module from './module.js'
+
+console.log(Module)
+// {
+//   default: f foo()
+//   bar: f bar()
+//   hello: 'hello'
+// }
+
+Module.default() // 输出 foo
+```
+
+合并模块：
+
+```js
+export * from 'x.mjs'
+export { name } from 'x.mjs'
+export * from 'y.mjs'
+// 可以推测出 default 肯定是会被 ignore 掉，不然若是从 x.mjs 和 y.mjs 导出的 default 都生效，那当前模块用哪一个 default 呢
+// 况且，export default 时要取名字，而 `export * from 'x.mjs'` 没有名字啊
+// 所以，可以推断出这个导出形多会 ignore 掉 default
+// 那如何使 x.mjs 和 y.mjs 的 default 也导出呢，可以像下面这样：
+export { default as X } from 'x.mjs'
+export { default as Y } from 'y.mjs'
+// 当然，前提是 x.mjs 和 y.mjs 中有 default export
+```
+
+这样一整理就清楚多了。
