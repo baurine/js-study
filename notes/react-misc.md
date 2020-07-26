@@ -369,6 +369,69 @@ function StatisCard({ detail }: { detail: StatementDetailInfo }) {
 }
 ```
 
+2020/04：之前没理解为什么 react-intl (老板本) 只能通过 `<FormattedMessage>` 这样以组件的形式使用，而不是像 react-i18next 这样通过 `t(key)` 这样用简单的方法来使用 (react-intl 新版本也支持了)。后来在深度使用 react-i18next 后发现，在某些场景下，最终我们也是要自己封装出一个类似 `<FormattedMessage>` 这样的组件来使用的，比如：
+
+```tsx
+export interface ITransKeyTextWithInfo {
+  transKey: string
+  placement?: TooltipPlacement
+  type?: 'warning' | 'danger'
+}
+
+function TransKey({ transKey, placement, type }: ITransKeyTextWithInfo) {
+  const { t } = useTranslation()
+  const text = t(transKey)
+  const tooltip = t(`${transKey}_tooltip`, {
+    defaultValue: '',
+    fallbackLng: '_',
+  })
+  return (
+    <TextWithInfo tooltip={tooltip} placement={placement} type={type}>
+      {text}
+    </TextWithInfo>
+  )
+}
+```
+
+具体过程见这里：https://github.com/pingcap-incubator/tidb-dashboard/pull/452#pullrequestreview-407166675
+
+只能在 custom hooks 中使用 primitive hooks，不能在 primitive hooks 中使用 custom hooks。
+
+下面这个方法因为在内部使用了 `useTranslation()`，所以方法本身成为了 custom hooks，但当它 useMemo() 中使用时，程序崩溃了。
+
+```tsx
+export function useSuccessColumn(...) {
+  const { t } = useTranslation()
+  return {
+    ...
+    onRender: (rec) => (
+      rec.success === 1 ?
+      <Badge status="success" text={t(`slow_query.common.status.success`)} /> :
+      <Badge status="error" text={t(`slow_query.common.status.failed`)} />
+    )
+  }
+}
+```
+
+解决办法，把 useTranslation() 放到组件中，使 useSuccessColumn() 不再是 custom hooks。
+
+```tsx
+function ResultStatusBadge({ status }: { status: 'success' | 'error' }) {
+  const { t } = useTranslation()
+  return (
+    <Badge status={status} text={t(`slow_query.common.status.${status}`)} />
+  )
+}
+function successColumn(...): IColumn {
+  return {
+    ...
+    onRender: (rec) => (
+      <ResultStatusBadge status={rec.success === 1 ? 'success' : 'error'} />
+    ),
+  }
+}
+```
+
 ## Suspense & React.lazy
 
 - [精读《Suspense 改变开发方式》](https://github.com/dt-fe/weekly/blob/v2/143.%E7%B2%BE%E8%AF%BB%E3%80%8ASuspense%20%E6%94%B9%E5%8F%98%E5%BC%80%E5%8F%91%E6%96%B9%E5%BC%8F%E3%80%8B.md)
