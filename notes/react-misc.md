@@ -228,6 +228,102 @@ Ant Design 中 Table 组件使用了这种用法：
       ...
     }
 
+2020/07/26: 通过准备在公司做 react hooks 的分享材料，对 hoc 和 render props 两种模式有了更深的理解。hooks 之前，难就在于状态逻辑的复用，而 hoc 和 render props 就是两种状态逻辑复用的方法。但缺点是会造成无谓的组件嵌套。hoc 和 render props 使状态逻辑以组件的形式存在，虽然它们与 ui 无关。
+
+以封装获取鼠标坐标的状态逻辑为例。
+
+HOC:
+
+```js
+function withMousePosition(MyComponent) {
+  return class MousePotionComp extends React.Component {
+    constructor(props) {
+      super(props)
+      this.state = {
+        x: 0,
+        y: 0,
+      }
+      this.onMouseMove = this.onMouseMove.bind(this)
+    }
+    onMouseMove(ev) {
+      this.setState({
+        x: ev.pageX,
+        y: ev.pageY,
+      })
+    }
+    componentDidMount() {
+      window.addEventListener('mousemove', this.onMouseMove)
+    }
+    componentWillUnmount() {
+      window.removeEventListener('mousemove', this.onMouseMove)
+    }
+    render() {
+      return (
+        <div className="mouse-position-container">
+          <h1>Mouse Position:</h1>
+          <MyComponent mousePos={this.state} {...this.props} />
+        </div>
+      )
+    }
+  }
+}
+```
+
+render props:
+
+```js
+class MousePosition extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      x: 0,
+      y: 0,
+    }
+    this.onMouseMove = this.onMouseMove.bind(this)
+  }
+  onMouseMove(ev) {
+    this.setState({
+      x: ev.pageX,
+      y: ev.pageY,
+    })
+  }
+  componentDidMount() {
+    window.addEventListener('mousemove', this.onMouseMove)
+  }
+  componentWillUnmount() {
+    window.removeEventListener('mousemove', this.onMouseMove)
+  }
+  render() {
+    return (
+      <div className="mouse-position-container">
+        <h1>Mouse Position:</h1>
+        {this.props.children(mousePos)}
+      </div>
+    )
+  }
+}
+```
+
+hooks:
+
+```js
+export function useMousePos() {
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    function handleMouseMove(ev) {
+      setPos({ x: ev.pageX, y: ev.pageY })
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
+
+  return pos
+}
+```
+
+hooks 在代码是明显少了，而且不会造成组件的嵌套。
+
 ## i18n
 
 两种常用方案：
