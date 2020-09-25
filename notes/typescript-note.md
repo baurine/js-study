@@ -74,6 +74,7 @@ TypeScript 和 React、Webpack 的配合使用。和一般 React & Webpack 项�
 ### 高级类型
 
 - [Advanced Types](https://www.typescriptlang.org/docs/handbook/advanced-types.html)
+- [TypeScript 高级技巧](https://juejin.im/post/6844903863791648782)
 
 内容：
 
@@ -86,103 +87,170 @@ TypeScript 和 React、Webpack 的配合使用。和一般 React & Webpack 项�
 - Mapped types: `{ [P in keyof T]: number }`
 - Conditional Types: `T extends U ? X : Y`
 
+```ts
+type bb = { delay: 'dddd'; setMessage: 'eeee'; hehe: never; foo: 'bar' }[
+  | 'delay'
+  | 'setMessage'
+  | 'hehe']
+// => type bb = 'dddd' | 'eeee'
+
+type bb = { delay: 'dddd'; setMessage: 'eeee'; hehe: never; foo: 'bar' }[
+  | 'delay'
+  | 'setMessage'
+  | 'haha']
+// 编译错误，'haha' key 不存在
+```
+
+```ts
+type Partial<T> = {
+  [P in keyof T]?: T[P]
+}
+
+type Required<T> = {
+  [P in keyof T]-?: T[P]
+}
+
+type Pick<T, K extends keyof T> = {
+  [P in K]: T[P]
+}
+// K extends keyof T 表明 K 是 keyof T 的一个子集
+// 比如 keyof T 为 "id"|"age"|"name"，则 K 可以为 "id", "id"|"age", "id"|"age"|"name" 等，但不能为类似 "id"|"gender" ...
+
+interface User {
+  id: number
+  age: number
+  name: string
+}
+
+// 相当于: type PartialUser = { id?: number; age?: number; name?: string; }
+type PartialUser = Partial<User>
+
+// 相当于: type PickUser = { id: number; age: number; }
+type PickUser = Pick<User, 'id' | 'age'>
+```
+
 一个复杂的示例：
 
-    interface Action<T> {
-      payload?: T;
-      type: string;
+```ts
+interface Action<T> {
+  payload?: T
+  type: string
+}
+
+class EffectModule {
+  count = 1
+  message = 'hello!'
+
+  delay(input: Promise<number>) {
+    return input.then((i) => ({
+      payload: `hello ${i}!`,
+      type: 'delay',
+    }))
+  }
+
+  setMessage(action: Action<Date>) {
+    return {
+      payload: action.payload!.getMilliseconds(),
+      type: 'set-message',
     }
+  }
+}
 
-    class EffectModule {
-      count = 1;
-      message = "hello!";
+type FunctionPropertyNames<T> = {
+  [K in keyof T]: T[K] extends Function ? K : never
+}[keyof T]
+// FunctionPropertyNames<EffectModule> => "delay" | "setMessage"
+// { [K in keyof T]: T[K] extends Function ? K : never }
+// =>
+// { "count": never, "message": never, "delay": "delay", "setMessage": "setMessage" }
+// { "count": never, "message": never, "delay": "delay", "setMessage": "setMessage" }["count" | "message" | "delay" | "setMessage"]
+// =>
+// "delay" | "setMessage"
 
-      delay(input: Promise<number>) {
-        return input.then(i => ({
-          payload: `hello ${i}!`,
-          type: "delay"
-        }));
-      }
+// get
+// {
+//   delay: (input: Promise<number>) => Promise<{
+//     payload: string;
+//     type: string;
+//   }>;
+//   setMessage: (action: Action<Date>) => {
+//     payload: number;
+//     type: string;
+//   };
+// }
+type FunctionProperties<T> = Pick<T, FunctionPropertyNames<T>>
+type EffectModuleFuns = FunctionProperties<EffectModule>
+type EffectModuleFunMap<T> = T extends (
+  input: Promise<infer U>
+) => Promise<Action<infer V>>
+  ? (input: U) => Action<V>
+  : T extends (action: Action<infer U>) => Action<infer V>
+  ? (input: U) => Action<V>
+  : never
 
-      setMessage(action: Action<Date>) {
-        return {
-          payload: action.payload!.getMilliseconds(),
-          type: "set-message"
-        };
-      }
-    }
+type ConnectedEffectModule = {
+  [K in keyof EffectModuleFuns]: EffectModuleFunMap<EffectModuleFuns[K]>
+}
 
-    // get "delay" | "setMessage"
-    type FunctionPropertyNames<T> = { [K in keyof T]: T[K] extends Function ? K : never }[keyof T];
-    // get
-    // {
-    //   delay: (input: Promise<number>) => Promise<{
-    //     payload: string;
-    //     type: string;
-    //   }>;
-    //   setMessage: (action: Action<Date>) => {
-    //     payload: number;
-    //     type: string;
-    //   };
-    // }
-    type FunctionProperties<T> = Pick<T, FunctionPropertyNames<T>>;
-    type EffectModuleFuns = FunctionProperties<EffectModule>;
-    type EffectModuleFunMap<T> =
-      T extends (input : Promise<infer U>) => Promise<Action<infer V>>
-      ? (input: U) => Action<V>
-      : T extends (action: Action<infer U>) => Action<infer V>
-        ? (input: U) => Action<V>
-        : never
+// 修改 Connect 的类型，让 connected 的类型变成预期的类型
+type Connect = (module: EffectModule) => ConnectedEffectModule
 
-    type ConnectedEffectModule = {
-      [K in keyof EffectModuleFuns]: EffectModuleFunMap<EffectModuleFuns[K]>
-    }
+const connect: Connect = (m) => ({
+  delay: (input: number) => ({
+    type: 'delay',
+    payload: `hello 2`,
+  }),
+  setMessage: (input: Date) => ({
+    type: 'set-message',
+    payload: input.getMilliseconds(),
+  }),
+})
 
-    // 修改 Connect 的类型，让 connected 的类型变成预期的类型
-    type Connect = (module: EffectModule) => ConnectedEffectModule;
+type Connected = {
+  delay(input: number): Action<string>
+  setMessage(action: Date): Action<number>
+}
 
-    const connect: Connect = m => ({
-      delay: (input: number) => ({
-        type: "delay",
-        payload: `hello 2`
-      }),
-      setMessage: (input: Date) => ({
-        type: "set-message",
-        payload: input.getMilliseconds()
-      })
-    });
-
-    type Connected = {
-      delay(input: number): Action<string>;
-      setMessage(action: Date): Action<number>;
-    };
-
-    export const connected: Connected = connect(new EffectModule());
+export const connected: Connected = connect(new EffectModule())
+```
 
 示例 2：
 
-    interface User {
-      name: string,
-      age: number,
-      adult: boolean
-    }
+```ts
+interface User {
+  name: string
+  age: number
+  adult: boolean
+}
 
-    // get string | number
-    type UserKeysTypes = User['name' | 'age']
+type UserKeysTypes = User['name' | 'age']
+// => type UserKeysTypes = string | number
+```
 
 示例 3：
 
-    type MyUnion = 'a' | 'b' | 'c'
-    type UnionArr = MyUnion[]
-    const unionArr: UnionArr = ['a']
-    const unionArr2: UnionArr = ['a', 'b']
-    const unionArr3: UnionArr = ['a', 'b', 'c']
-    const unionArr4: UnionArr = ['a', 'b', 'c', 'd'] // wrong
+```ts
+type MyUnion = 'a' | 'b' | 'c'
+type UnionArr = MyUnion[]
+const unionArr: UnionArr = ['a']
+const unionArr2: UnionArr = ['a', 'b']
+const unionArr3: UnionArr = ['a', 'b', 'c']
+const unionArr4: UnionArr = ['a', 'b', 'c', 'd'] // wrong, 'd' 不存在
 
-    type Weeks = 'Mon' | 'Tue' | 'Wed' | 'Thur' | 'Fri' | 'Sat' | 'Sun'
-    type WeeksArr = Weeks[]
-    const weeks: WeeksArr = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
-    const weeks2: WeeksArr = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun', 'hehe'] //wrong
+type Weeks = 'Mon' | 'Tue' | 'Wed' | 'Thur' | 'Fri' | 'Sat' | 'Sun'
+type WeeksArr = Weeks[]
+const weeks: WeeksArr = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
+const weeks2: WeeksArr = [
+  'Mon',
+  'Tue',
+  'Wed',
+  'Thur',
+  'Fri',
+  'Sat',
+  'Sun',
+  'hehe',
+] // wrong, 'hehe' 不存在
+```
 
 表示这个类型包含任意字段：
 
