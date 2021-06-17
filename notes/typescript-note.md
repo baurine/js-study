@@ -43,7 +43,7 @@ interface 中可以定义可选属性，也 `?` 声明的属性是可选属性�
       width?: number;
     }
 
-注意，这里的可选属性和 Swift 中用 `?` 声明的 Optional 变量不一样。Swift 中的 Optinal 变量，此变量一定是存在的，但值可以为 nil。但 TypeScript 的 `?` 表示此属性可能不存在，跟值是否为 null 没有关系。
+注意，这里的可选属性和 Swift 中用 `?` 声明的 Optional 变量不一样。Swift 中的 Optinal 变量，此变量一定是存在的，但值可以为 nil。但 TypeScript 的 `?` 表示此属性可能不存在，跟值是否为 null 没有关系，而是表示有可能是 undefined。
 
 用 interface 定义函数类型：
 
@@ -74,6 +74,7 @@ TypeScript 和 React、Webpack 的配合使用。和一般 React & Webpack 项�
 ### 高级类型
 
 - [Advanced Types](https://www.typescriptlang.org/docs/handbook/advanced-types.html)
+- [Utility Types](https://www.typescriptlang.org/docs/handbook/utility-types.html)
 - [TypeScript 高级技巧](https://juejin.im/post/6844903863791648782)
 
 内容：
@@ -99,6 +100,17 @@ type bb = { delay: 'dddd'; setMessage: 'eeee'; hehe: never; foo: 'bar' }[
   | 'setMessage'
   | 'haha']
 // 编译错误，'haha' key 不存在
+
+type bb = { delay: number; setMessage: () => void; foo: string }[
+  | 'delay'
+  | 'foo']
+// => type bb = number | string
+
+// T[P extends keyof T] ==> keyof {[K in P]: T[K]}
+
+function get<T, K extends keyof T>(o: T, name: K): T[K] {
+  return o[name]
+}
 ```
 
 ```ts
@@ -113,8 +125,14 @@ type Required<T> = {
 type Pick<T, K extends keyof T> = {
   [P in K]: T[P]
 }
+
 // K extends keyof T 表明 K 是 keyof T 的一个子集
-// 比如 keyof T 为 "id"|"age"|"name"，则 K 可以为 "id", "id"|"age", "id"|"age"|"name" 等，但不能为类似 "id"|"gender" ...
+// keyof T 表示 T 类型所有 key 的 union 集合
+// 比如 type T = {id:number, age:number, name:string}，则 keyof T 为类型 "id"|"age"|"name"
+// 则 K 可以为 "id", "id"|"age", "id"|"age"|"name" 等，但不能为类似 "id"|"gender" ...
+
+// [P in K], [P in keyof T]
+// in 后面必须是 union 类型
 
 interface User {
   id: number
@@ -225,6 +243,9 @@ interface User {
 
 type UserKeysTypes = User['name' | 'age']
 // => type UserKeysTypes = string | number
+
+const user: User = { name: 'foo', age: 10, adult: false }
+user['name' | 'age'] = 'foo' | 10
 ```
 
 示例 3：
@@ -259,6 +280,62 @@ interface MyType {
   [k: string]: any
 }
 ```
+
+`Exclude<Type, ExcludedUnion>` 有点不好理解
+
+```ts
+type Exclude<T, U> = T extends U ? never : T
+
+type T0 = Exclude<'a' | 'b' | 'c', 'a'>
+// => type T0 = "b" | "c"
+// 所以是对 'a'|'b'|'c' 的每一个元素，判断它是否 extends 'a'，然后将结果再 union?
+// `T extends U ? never : T` 到底是怎么工作的？
+
+type T1 = Exclude<'a' | 'b' | 'c', 'a' | 'b'>
+// => type T1 = "c"
+type T2 = Exclude<string | number | (() => void), Function>
+// => type T2 = string | number
+```
+
+Exclude 的反向操作是 `Extract<Type, Union>`：`type Exclude<T, U> = T extends U ? T : never`
+
+Extract 和 Pick 的区别？定义完全不一样。
+
+Pick:
+
+```ts
+type Pick<T, K extends keyof T> = {
+  [P in K]: T[P]
+}
+```
+
+[TypeScript: Conditional Types Explained](https://rossbulat.medium.com/typescript-conditionals-explained-a096591f3ac0)
+
+在上面这篇文章里有解释，在 contidtional types 中，`T extends U ? T : never`，如果 T 是单独的 union 类型，则会用 union 的每一个单独的值来判断是否 extends U，但如果 T 是作为函数返回值类型，或是数组元素类型，则拿 T 整体进行判断，而不是拿 T 的每个值进行比较。
+
+```ts
+// Distributive vs non-distributive conditionals
+
+// distributive
+type StringOrNumberOnly<T> = T extends string | number ? T : never
+type MyResult = StringOrNumberOnly<string | number | boolean>
+// type MyResult = string | number
+
+// non-distributive
+type MyTypeFunction<T> = (() => T) extends () => string | number ? T : never
+type MyResultFunction = MyTypeFunction<number | string | boolean>
+// type MyResultFunction = never
+type MyResultFunction = MyTypeFunction<number>
+// type MyResultFunction = number
+
+type MyTypeTuple<T> = [T] extends [string | number] ? T : never
+type MyResultTuple = MyTypeTuple<string | number | boolean>
+// type MyResultTuple = never
+type MyResultTuple = MyTypeTuple<string>
+// type MyResultTuple = string
+```
+
+官网文档上也有 distributive conditional types 的说明：https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types
 
 ## Note for Others
 
