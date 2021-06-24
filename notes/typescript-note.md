@@ -87,8 +87,15 @@ TypeScript 和 React、Webpack 的配合使用。和一般 React & Webpack 项�
 - Index types: keyof
 - Mapped types: `{ [P in keyof T]: number }`
 - Conditional Types: `T extends U ? X : Y`
+- [Indexed Access Types](https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html)
 
 ```ts
+// Indexed Access Types
+// https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html
+type Person = { age: number; name: string; alive: boolean }
+type I1 = Person['age' | 'name']
+// type I1 = string | number
+
 type bb = { delay: 'dddd'; setMessage: 'eeee'; hehe: never; foo: 'bar' }[
   | 'delay'
   | 'setMessage'
